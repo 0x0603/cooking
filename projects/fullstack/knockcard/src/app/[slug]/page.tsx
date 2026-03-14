@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { notFound } from 'next/navigation'
 
 import type { CardData, SectionData } from '@/types'
@@ -10,56 +11,60 @@ interface PageProps {
   params: { slug: string }
 }
 
-async function getCardBySlug(slug: string): Promise<CardData | null> {
-  const card = await prisma.card.findUnique({
-    where: { slug },
-    include: {
-      cardSections: {
-        where: { isVisible: true },
-        orderBy: { sortOrder: 'asc' },
-      },
-      user: {
-        select: {
-          name: true,
-          avatarUrl: true,
+const getCardBySlug = unstable_cache(
+  async (slug: string): Promise<CardData | null> => {
+    const card = await prisma.card.findUnique({
+      where: { slug },
+      include: {
+        cardSections: {
+          where: { isVisible: true },
+          orderBy: { sortOrder: 'asc' },
+        },
+        user: {
+          select: {
+            name: true,
+            avatarUrl: true,
+          },
         },
       },
-    },
-  })
+    })
 
-  if (!card || !card.isPublished) {
-    return null
-  }
+    if (!card || !card.isPublished) {
+      return null
+    }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sections: SectionData[] = card.cardSections.map((s: any) => ({
-    id: s.id,
-    type: s.type as SectionData['type'],
-    title: s.title,
-    content: s.content,
-    sortOrder: s.sortOrder,
-    isVisible: s.isVisible,
-  }))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sections: SectionData[] = card.cardSections.map((s: any) => ({
+      id: s.id,
+      type: s.type as SectionData['type'],
+      title: s.title,
+      content: s.content,
+      sortOrder: s.sortOrder,
+      isVisible: s.isVisible,
+    }))
 
-  return {
-    id: card.id,
-    slug: card.slug,
-    displayName: card.displayName,
-    title: card.title,
-    company: card.company,
-    bio: card.bio,
-    coverPhotoUrl: card.coverPhotoUrl,
-    avatarUrl: card.avatarUrl,
-    theme: card.theme as CardData['theme'],
-    themeConfig: card.themeConfig,
-    isPublished: card.isPublished,
-    sections,
-    user: {
-      name: card.user.name,
-      avatarUrl: card.user.avatarUrl,
-    },
-  }
-}
+    return {
+      id: card.id,
+      slug: card.slug,
+      displayName: card.displayName,
+      title: card.title,
+      company: card.company,
+      bio: card.bio,
+      coverPhotoUrl: card.coverPhotoUrl,
+      avatarUrl: card.avatarUrl,
+      theme: card.theme as CardData['theme'],
+      themeConfig: card.themeConfig,
+      isPublished: card.isPublished,
+      sections,
+      user: {
+        name: card.user.name,
+        avatarUrl: card.user.avatarUrl,
+      },
+    }
+  },
+  ['card-by-slug'],
+  { revalidate: 60 }
+)
 
 async function trackView(cardId: string): Promise<void> {
   try {
@@ -110,7 +115,8 @@ export default async function SlugPage({ params }: PageProps) {
     notFound()
   }
 
-  await trackView(card.id)
+  // Fire-and-forget — don't block page render
+  trackView(card.id)
 
   return <ProfilePage card={card} />
 }
