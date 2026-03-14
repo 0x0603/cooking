@@ -87,6 +87,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${card.displayName} | KnockCard`,
     description,
+    manifest: `/${card.slug}/manifest.json`,
     openGraph: {
       title: card.displayName,
       description,
