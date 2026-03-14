@@ -1,23 +1,13 @@
 'use client'
 
-import type { CardTheme } from '@/types'
-
-interface FooterProps {
-  theme: CardTheme
-}
-
-export function Footer({ theme }: FooterProps) {
-  const isDark = theme === 'dark'
-
+export function Footer() {
   return (
-    <footer className="pb-8 pt-4 text-center">
+    <footer className="px-5 pb-8 pt-4 text-center">
       <a
         href="https://knockcard.io"
-        className={`text-xs transition-colors ${
-          isDark ? 'text-white/20 hover:text-white/40' : 'text-gray-300 hover:text-gray-400'
-        }`}
+        className="text-[9px] font-semibold uppercase tracking-[3px] text-[#ccc] transition-colors hover:text-[#999]"
       >
-        Powered by <span className="font-medium">KnockCard</span>
+        Powered by KnockCard
       </a>
     </footer>
   )

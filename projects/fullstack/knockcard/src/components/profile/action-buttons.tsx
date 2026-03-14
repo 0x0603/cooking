@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { useState } from 'react'
 
 import type { CardData, CardTheme } from '@/types'
@@ -14,48 +15,42 @@ interface ActionButtonsProps {
 
 export function ActionButtons({ card, theme }: ActionButtonsProps) {
   const [exchangeOpen, setExchangeOpen] = useState(false)
-  const isDark = theme === 'dark'
 
   return (
     <>
-      <div className="flex gap-3">
+      <motion.div
+        className="flex gap-2"
+        initial={{ opacity: 0, scale: 0.92, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+      >
         <SaveContactButton
           card={card}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition-colors ${
-            isDark
-              ? 'bg-white text-black hover:bg-gray-200'
-              : 'bg-gray-900 text-white hover:bg-gray-800'
-          }`}
+          className="flex flex-1 items-center gap-2.5 rounded-[14px] bg-[#111] px-4 py-3.5 text-[13px] font-medium text-white transition-all hover:bg-[#1a1a1a] hover:-translate-y-px"
         />
 
         <button
           type="button"
           onClick={() => setExchangeOpen(true)}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition-colors ${
-            isDark
-              ? 'border-white/20 text-white hover:bg-white/10'
-              : 'border-gray-300 text-gray-900 hover:bg-gray-100'
-          }`}
+          className="flex flex-1 items-center gap-2.5 rounded-[14px] bg-[#111] px-4 py-3.5 text-[13px] font-medium text-white transition-all hover:bg-[#1a1a1a] hover:-translate-y-px"
         >
           <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
+            width="20"
+            height="20"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+            stroke="#fff"
+            strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M16 3h5v5" />
-            <path d="M4 20 21 3" />
-            <path d="M21 16v5h-5" />
-            <path d="M15 15 3 21" />
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <polyline points="16 9 12 5 8 9" />
+            <polyline points="16 15 12 19 8 15" />
           </svg>
           Exchange contact
         </button>
-      </div>
+      </motion.div>
 
       {exchangeOpen && (
         <ExchangeForm cardId={card.id} theme={theme} onClose={() => setExchangeOpen(false)} />

@@ -3,7 +3,7 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 
-import type { CardTheme, SectionData } from '@/types'
+import type { SectionData } from '@/types'
 
 import { AboutSection } from '@/components/profile/about-section'
 import { ContactSection } from '@/components/profile/contact-section'
@@ -13,7 +13,6 @@ import { SocialSection } from '@/components/profile/social-section'
 
 interface SectionRendererProps {
   section: SectionData
-  theme: CardTheme
 }
 
 function getSectionComponent(type: string) {
@@ -33,9 +32,9 @@ function getSectionComponent(type: string) {
   }
 }
 
-export function SectionRenderer({ section, theme }: SectionRendererProps) {
+export function SectionRenderer({ section }: SectionRendererProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once: true, margin: '-50px' })
+  const isInView = useInView(ref, { once: true, margin: '-30px' })
 
   const Component = getSectionComponent(section.type)
 
@@ -46,11 +45,11 @@ export function SectionRenderer({ section, theme }: SectionRendererProps) {
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      initial={{ opacity: 0, y: 24 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
     >
-      <Component section={section} theme={theme} />
+      <Component section={section} />
     </motion.div>
   )
 }

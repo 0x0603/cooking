@@ -3,29 +3,25 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 
-import type { CardTheme, GalleryContent, SectionData } from '@/types'
+import type { GalleryContent, SectionData } from '@/types'
 
 interface GallerySectionProps {
   section: SectionData
-  theme: CardTheme
 }
 
-export function GallerySection({ section, theme }: GallerySectionProps) {
+export function GallerySection({ section }: GallerySectionProps) {
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: '-30px' })
-  const isDark = theme === 'dark'
 
   const content = section.content as unknown as GalleryContent
-  const title = section.title ?? 'GALLERY'
+  const title = section.title ?? 'Gallery'
   const columns = content.columns ?? 2
 
   return (
     <div ref={ref}>
       <motion.h2
-        className={`mb-3 text-xs font-semibold uppercase tracking-widest ${
-          isDark ? 'text-white/50' : 'text-gray-400'
-        }`}
-        initial={{ opacity: 0, x: -20 }}
+        className="mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-[#1a1a1a]"
+        initial={{ opacity: 0, x: -16 }}
         animate={isInView ? { opacity: 1, x: 0 } : {}}
         transition={{ duration: 0.4 }}
       >

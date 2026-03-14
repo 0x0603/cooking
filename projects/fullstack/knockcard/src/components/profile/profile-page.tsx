@@ -15,14 +15,11 @@ interface ProfilePageProps {
 
 export function ProfilePage({ card }: ProfilePageProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const isDark = card.theme === 'dark'
 
   return (
-    <div
-      ref={scrollRef}
-      className={`min-h-screen ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-[#fafafa] text-gray-900'}`}
-    >
+    <div ref={scrollRef} className="min-h-screen bg-white text-[#1a1a1a]">
       <div className="mx-auto max-w-md">
+        {/* Hero is always dark */}
         <Hero
           name={card.displayName}
           title={card.title}
@@ -32,17 +29,22 @@ export function ProfilePage({ card }: ProfilePageProps) {
           scrollRef={scrollRef}
         />
 
-        <div className="px-4 py-4">
+        {/* Action buttons */}
+        <div className="px-4 pt-3.5">
           <ActionButtons card={card} theme={card.theme} />
         </div>
 
-        <div className="space-y-6 px-4 pb-8">
-          {card.sections.map(section => (
-            <SectionRenderer key={section.id} section={section} theme={card.theme} />
-          ))}
-        </div>
+        {/* Sections with border-top dividers */}
+        {card.sections.map((section, index) => (
+          <div
+            key={section.id}
+            className={`border-t border-[#e8e8e8] px-5 py-5 ${index === 0 ? 'mt-3' : ''}`}
+          >
+            <SectionRenderer section={section} />
+          </div>
+        ))}
 
-        <Footer theme={card.theme} />
+        <Footer />
       </div>
     </div>
   )
