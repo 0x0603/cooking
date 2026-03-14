@@ -70,3 +70,5 @@ secrets/
 *.pem
 *.key
 *.cert
+projects/fullstack/knockcard/.next/
+projects/fullstack/knockcard/node_modules/
