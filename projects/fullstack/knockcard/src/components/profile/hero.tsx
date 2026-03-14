@@ -4,8 +4,11 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 
 import type { CardTheme } from '@/types'
 
+import { QrButton } from '@/components/profile/qr-section'
+
 interface HeroProps {
   name: string
+  slug: string
   title: string
   coverPhotoUrl: string | null
   avatarUrl: string | null
@@ -52,7 +55,7 @@ const particles = [
   { delay: 1.5, x: 55, y: 15, size: 2 },
 ]
 
-export function Hero({ name, coverPhotoUrl }: HeroProps) {
+export function Hero({ name, slug, coverPhotoUrl }: HeroProps) {
   const { scrollY } = useScroll()
 
   // Cover: only drift up slightly, no zoom
@@ -74,7 +77,7 @@ export function Hero({ name, coverPhotoUrl }: HeroProps) {
   return (
     <motion.div
       className="relative overflow-hidden bg-[#0a0a0a]"
-      style={{ borderBottomRightRadius: borderRadius, height: 480 }}
+      style={{ borderBottomRightRadius: borderRadius, height: 560 }}
     >
       {/* Cover — zoom + drift */}
       <motion.div className="absolute inset-0" style={{ y: coverY }}>
@@ -109,12 +112,13 @@ export function Hero({ name, coverPhotoUrl }: HeroProps) {
         <FloatingParticle key={i} {...p} />
       ))}
 
-      {/* Brand — fades first */}
+      {/* Top bar: brand + QR button */}
       <motion.div
-        className="absolute left-0 right-0 top-0 z-10 p-5"
+        className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-5"
         style={{ y: brandY, opacity: brandOpacity }}
       >
         <span className="text-[22px] font-extrabold tracking-[-0.5px] text-white">knockcard</span>
+        <QrButton slug={slug} name={name} />
       </motion.div>
 
       {/* Name is rendered in profile-page.tsx as a separate z-layer */}

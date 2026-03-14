@@ -27,6 +27,7 @@ export function ProfilePage({ card }: ProfilePageProps) {
         <div className="sticky top-0 z-0">
           <Hero
             name={card.displayName}
+            slug={card.slug}
             title={card.title}
             coverPhotoUrl={card.coverPhotoUrl}
             avatarUrl={card.avatarUrl}
@@ -36,18 +37,13 @@ export function ProfilePage({ card }: ProfilePageProps) {
 
         {/* Name overlay — positioned above content, below hero visually but z above content */}
         <motion.div
-          className="pointer-events-none sticky top-[360px] z-20 px-6 pb-4"
-          style={{ y: nameY, opacity: nameOpacity, marginTop: -120 }}
+          className="pointer-events-none sticky top-[300px] z-20 px-6 pb-4"
+          style={{ y: nameY, opacity: nameOpacity, marginTop: -180 }}
         >
-          <h1 className="text-[42px] font-extrabold leading-[1.05] tracking-[-1.5px] text-white [text-shadow:0_2px_20px_rgba(0,0,0,0.6)]">
-            {card.displayName.split(' ').map((word, i) => (
-              <span key={i}>
-                {word}
-                {i < card.displayName.split(' ').length - 1 && <br />}
-              </span>
-            ))}
+          <h1 className="text-[40px] font-extrabold leading-[1.1] tracking-[-1.5px] text-white [text-shadow:0_2px_20px_rgba(0,0,0,0.6)]">
+            {card.displayName}
           </h1>
-          <p className="mt-1.5 text-[15px] font-normal text-white/[0.55] [text-shadow:0_1px_10px_rgba(0,0,0,0.5)]">
+          <p className="mt-2 text-[15px] font-normal text-white/[0.6] [text-shadow:0_1px_10px_rgba(0,0,0,0.5)]">
             {card.title}
           </p>
         </motion.div>
