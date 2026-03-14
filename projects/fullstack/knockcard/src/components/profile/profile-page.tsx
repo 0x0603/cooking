@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
 
 import type { CardData } from '@/types'
 
@@ -14,37 +14,61 @@ interface ProfilePageProps {
 }
 
 export function ProfilePage({ card }: ProfilePageProps) {
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const { scrollY } = useScroll()
+
+  // Name: fade out quickly on first scroll
+  const nameY = useTransform(scrollY, [0, 100], [0, 20])
+  const nameOpacity = useTransform(scrollY, [0, 100], [1, 0])
 
   return (
-    <div ref={scrollRef} className="min-h-screen bg-white text-[#1a1a1a]">
+    <div className="relative min-h-screen bg-white text-[#1a1a1a]">
       <div className="mx-auto max-w-md">
-        {/* Hero is always dark */}
-        <Hero
-          name={card.displayName}
-          title={card.title}
-          coverPhotoUrl={card.coverPhotoUrl}
-          avatarUrl={card.avatarUrl}
-          theme={card.theme}
-          scrollRef={scrollRef}
-        />
-
-        {/* Action buttons */}
-        <div className="px-4 pt-3.5">
-          <ActionButtons card={card} theme={card.theme} />
+        {/* Hero — sticky behind */}
+        <div className="sticky top-0 z-0">
+          <Hero
+            name={card.displayName}
+            title={card.title}
+            coverPhotoUrl={card.coverPhotoUrl}
+            avatarUrl={card.avatarUrl}
+            theme={card.theme}
+          />
         </div>
 
-        {/* Sections with border-top dividers */}
-        {card.sections.map((section, index) => (
-          <div
-            key={section.id}
-            className={`border-t border-[#e8e8e8] px-5 py-5 ${index === 0 ? 'mt-3' : ''}`}
-          >
-            <SectionRenderer section={section} />
-          </div>
-        ))}
+        {/* Name overlay — positioned above content, below hero visually but z above content */}
+        <motion.div
+          className="pointer-events-none sticky top-[360px] z-20 px-6 pb-4"
+          style={{ y: nameY, opacity: nameOpacity, marginTop: -120 }}
+        >
+          <h1 className="text-[42px] font-extrabold leading-[1.05] tracking-[-1.5px] text-white [text-shadow:0_2px_20px_rgba(0,0,0,0.6)]">
+            {card.displayName.split(' ').map((word, i) => (
+              <span key={i}>
+                {word}
+                {i < card.displayName.split(' ').length - 1 && <br />}
+              </span>
+            ))}
+          </h1>
+          <p className="mt-1.5 text-[15px] font-normal text-white/[0.55] [text-shadow:0_1px_10px_rgba(0,0,0,0.5)]">
+            {card.title}
+          </p>
+        </motion.div>
 
-        <Footer />
+        {/* Content — slides up over hero */}
+        <div className="relative z-10 flex min-h-screen flex-col rounded-t-[28px] bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)]">
+          <div className="px-4 pt-5">
+            <ActionButtons card={card} theme={card.theme} />
+          </div>
+
+          {card.sections.map((section, index) => (
+            <div
+              key={section.id}
+              className={`border-t border-[#e8e8e8] px-5 py-5 ${index === 0 ? 'mt-3' : ''}`}
+            >
+              <SectionRenderer section={section} />
+            </div>
+          ))}
+
+          <Footer />
+        </div>
       </div>
     </div>
   )

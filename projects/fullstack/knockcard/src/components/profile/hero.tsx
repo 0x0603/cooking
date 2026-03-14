@@ -1,7 +1,6 @@
 'use client'
 
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { useEffect, useState, type RefObject } from 'react'
 
 import type { CardTheme } from '@/types'
 
@@ -11,7 +10,6 @@ interface HeroProps {
   coverPhotoUrl: string | null
   avatarUrl: string | null
   theme: CardTheme
-  scrollRef: RefObject<HTMLDivElement>
 }
 
 function FloatingParticle({
@@ -54,97 +52,72 @@ const particles = [
   { delay: 1.5, x: 55, y: 15, size: 2 },
 ]
 
-export function Hero({ name, title, coverPhotoUrl, scrollRef }: HeroProps) {
-  const [imageLoaded, setImageLoaded] = useState(false)
+export function Hero({ name, coverPhotoUrl }: HeroProps) {
+  const { scrollY } = useScroll()
 
-  const { scrollY } = useScroll({ container: scrollRef })
+  // Cover: only drift up slightly, no zoom
+  const coverY = useTransform(scrollY, [0, 500], [0, 40])
 
-  // Parallax: whole block moves up at 0.35x speed, fades out
-  const infoY = useTransform(scrollY, [0, 400], [0, 140])
-  const infoOpacity = useTransform(scrollY, [0, 333], [1, 0])
+  // Vignette: darkens as content slides over
+  const vignetteOpacity = useTransform(scrollY, [0, 400], [0, 0.5])
 
-  useEffect(() => {
-    if (!coverPhotoUrl) {
-      setImageLoaded(true)
-    }
-  }, [coverPhotoUrl])
+  // Brand logo: fades + slides up first
+  const brandY = useTransform(scrollY, [0, 150], [0, -30])
+  const brandOpacity = useTransform(scrollY, [0, 100], [1, 0])
+
+  // Border radius shrinks
+  const borderRadius = useTransform(scrollY, [0, 300], [40, 0])
+
+  // Shimmer fades
+  const shimmerOpacity = useTransform(scrollY, [0, 300], [1, 0.3])
 
   return (
-    <div
+    <motion.div
       className="relative overflow-hidden bg-[#0a0a0a]"
-      style={{ borderBottomRightRadius: 40, height: 400 }}
+      style={{ borderBottomRightRadius: borderRadius, height: 480 }}
     >
-      {/* Cover Photo or Gradient */}
-      <div className="absolute inset-0">
+      {/* Cover — zoom + drift */}
+      <motion.div className="absolute inset-0" style={{ y: coverY }}>
         {coverPhotoUrl ? (
-          <img
-            src={coverPhotoUrl}
-            alt={`${name} cover`}
-            className="h-full w-full object-cover"
-            onLoad={() => setImageLoaded(true)}
-          />
+          <img src={coverPhotoUrl} alt={`${name} cover`} className="h-full w-full object-cover" />
         ) : (
           <div className="h-full w-full bg-[radial-gradient(ellipse_at_50%_35%,#3a3a3a_0%,#1a1a1a_45%,#0a0a0a_100%)]" />
         )}
-      </div>
+      </motion.div>
 
-      {/* Bottom gradient overlay */}
-      <div className="absolute bottom-0 left-0 right-0 h-[55%] bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+      {/* Bottom gradient — strong enough for light photos */}
+      <div className="absolute bottom-0 left-0 right-0 h-[75%] bg-gradient-to-t from-black from-[15%] via-black/70 to-transparent" />
 
-      {/* Shimmer Sweep */}
+      {/* Vignette — darkens on scroll */}
+      <motion.div className="absolute inset-0 bg-black" style={{ opacity: vignetteOpacity }} />
+
+      {/* Shimmer */}
       <motion.div
         className="pointer-events-none absolute inset-0"
         style={{
+          opacity: shimmerOpacity,
           background:
             'linear-gradient(105deg, transparent 0%, transparent 40%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 55%, transparent 60%, transparent 100%)',
         }}
         initial={{ x: '-50%' }}
         animate={{ x: '150%' }}
-        transition={{
-          duration: 5,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
       />
 
-      {/* Floating Particles */}
+      {/* Particles */}
       {particles.map((p, i) => (
         <FloatingParticle key={i} {...p} />
       ))}
 
-      {/* Top Nav */}
-      <div className="absolute left-0 right-0 top-0 z-10 p-5">
-        <span className="text-[22px] font-extrabold tracking-[-0.5px] text-white">knockcard</span>
-      </div>
-
-      {/* Name + Title — parallax: slides up at 0.35x speed, fades out */}
+      {/* Brand — fades first */}
       <motion.div
-        className="absolute bottom-[30px] left-0 right-0 z-10 px-6"
-        style={{ y: infoY, opacity: infoOpacity }}
+        className="absolute left-0 right-0 top-0 z-10 p-5"
+        style={{ y: brandY, opacity: brandOpacity }}
       >
-        <motion.h1
-          className="text-[42px] font-extrabold leading-[1.05] tracking-[-1.5px] text-white"
-          initial={{ opacity: 0, y: 20 }}
-          animate={imageLoaded ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
-          {name.split(' ').map((word, i) => (
-            <span key={i}>
-              {word}
-              {i < name.split(' ').length - 1 && <br />}
-            </span>
-          ))}
-        </motion.h1>
-
-        <motion.p
-          className="mt-1.5 text-[15px] font-normal text-white/[0.55]"
-          initial={{ opacity: 0, y: 10 }}
-          animate={imageLoaded ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.35, duration: 0.5 }}
-        >
-          {title}
-        </motion.p>
+        <span className="text-[22px] font-extrabold tracking-[-0.5px] text-white">knockcard</span>
       </motion.div>
-    </div>
+
+      {/* Name is rendered in profile-page.tsx as a separate z-layer */}
+    </motion.div>
   )
 }

@@ -72,3 +72,4 @@ secrets/
 *.cert
 projects/fullstack/knockcard/.next/
 projects/fullstack/knockcard/node_modules/
+projects/fullstack/knockcard/public/demo-cover.jpeg
