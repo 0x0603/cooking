@@ -240,6 +240,25 @@ GET    /api/og/:slug             Open Graph image (dynamic)
 - [ ] NFC tag → URL redirect to profile
 - [ ] Admin: assign NFC tag UID to card
 
+### Card Activation (sell NFC cards)
+
+- [ ] Pre-create cards with `activationCode` (6-char random), `userId = null`
+- [ ] `/activate?code=ABC123` page → login Google/GitHub → claim card to account
+- [ ] NFC tap → `knockcard.io/activate?code=xxx` for unclaimed cards
+- [ ] After claim → redirect to dashboard edit card
+- [ ] Admin panel: batch create cards with activation codes
+- [ ] Two user flows:
+  - **Flow A (free)**: Sign up → create card in dashboard → share link
+  - **Flow B (purchased NFC card)**: Receive card → tap/enter code → login → claim → edit
+
+### Landing Page
+
+- [ ] Marketing homepage at `/`
+- [ ] Hero section with demo card preview
+- [ ] Features section
+- [ ] Pricing section (Free / Pro / Team)
+- [ ] CTA → sign up
+
 ---
 
 ## Monetization (Post-MVP)

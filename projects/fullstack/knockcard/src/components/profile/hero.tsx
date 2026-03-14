@@ -77,7 +77,7 @@ export function Hero({ name, slug, coverPhotoUrl }: HeroProps) {
   return (
     <motion.div
       className="relative overflow-hidden bg-[#0a0a0a]"
-      style={{ borderBottomRightRadius: borderRadius, height: 560 }}
+      style={{ borderBottomRightRadius: borderRadius, height: '65vh' }}
     >
       {/* Cover — zoom + drift */}
       <motion.div className="absolute inset-0" style={{ y: coverY }}>
