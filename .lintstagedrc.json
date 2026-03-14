@@ -1,0 +1,15 @@
+{
+  "!(templates/**)/*.{js,jsx,ts,tsx}": [
+    "npx eslint --fix --max-warnings 0",
+    "npx prettier --write"
+  ],
+  "!(templates/**)/*.{json,yml,yaml,md,css,scss}": [
+    "npx prettier --write"
+  ],
+  "!(templates/**)/*.go": [
+    "gofmt -w"
+  ],
+  "templates/**/*.{js,jsx,ts,tsx,json,yml,yaml,md,css,scss}": [
+    "npx prettier --write"
+  ]
+}

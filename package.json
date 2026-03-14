@@ -1,0 +1,45 @@
+{
+  "name": "cooking",
+  "version": "1.0.0",
+  "description": "Personal projects repository for learning and practicing software architecture",
+  "private": true,
+  "scripts": {
+    "setup": "make setup",
+    "install:all": "make install",
+    "test:all": "make test",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix --max-warnings 0",
+    "lint:all": "make lint",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,yml,yaml,md,css,scss}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,yml,yaml,md,css,scss}\"",
+    "format:all": "make format",
+    "type-check": "tsc --noEmit",
+    "clean": "make clean",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "monorepo",
+    "projects",
+    "learning",
+    "architecture"
+  ],
+  "author": "",
+  "license": "MIT",
+  "workspaces": [
+    "projects/*/*",
+    "shared/*"
+  ],
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.0",
+    "typescript": "^5.4.0"
+  }
+}
