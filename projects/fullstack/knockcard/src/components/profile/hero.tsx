@@ -117,7 +117,7 @@ export function Hero({ name, slug, coverPhotoUrl }: HeroProps) {
         className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-5"
         style={{ y: brandY, opacity: brandOpacity }}
       >
-        <span className="text-[22px] font-extrabold tracking-[-0.5px] text-white">knockcard</span>
+        <div />
         <QrButton slug={slug} name={name} />
       </motion.div>
 
