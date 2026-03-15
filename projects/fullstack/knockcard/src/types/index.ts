@@ -2,7 +2,23 @@ import type { JsonValue } from '@prisma/client/runtime/library'
 
 // ─── Section Content Types ──────────────────────────────────────────────────
 
-export type ContactItemType = 'phone' | 'email' | 'website' | 'location'
+export type ContactItemType =
+  | 'phone'
+  | 'email'
+  | 'website'
+  | 'location'
+  | 'address'
+  | 'birthday'
+  | 'fax'
+  | 'company'
+  | 'department'
+  | 'job_title'
+  | 'pronouns'
+  | 'languages'
+  | 'timezone'
+  | 'education'
+  | 'hours'
+  | 'note'
 
 export interface ContactItem {
   type: ContactItemType
