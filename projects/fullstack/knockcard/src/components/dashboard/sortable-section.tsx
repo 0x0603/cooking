@@ -404,7 +404,11 @@ function ContactInline({
   }
 
   function addItem() {
-    commit([...items, { _id: `info-new-${Date.now()}`, type: 'phone', label: '', value: '' }])
+    const typeLabel = INFO_TYPES.find(t => t.value === 'phone')?.label ?? 'Phone'
+    commit([
+      ...items,
+      { _id: `info-new-${Date.now()}`, type: 'phone', label: typeLabel, value: '' },
+    ])
   }
 
   function updateItem(id: string, updates: Partial<ContactItem>) {
@@ -481,7 +485,11 @@ function DraggableInfoItem({
       <select
         className="rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm"
         value={item.type}
-        onChange={e => onUpdate({ type: e.target.value as ContactItemType })}
+        onChange={e => {
+          const newType = e.target.value as ContactItemType
+          const newLabel = INFO_TYPES.find(t => t.value === newType)?.label ?? newType
+          onUpdate({ type: newType, label: newLabel })
+        }}
       >
         {INFO_TYPES.map(t => (
           <option key={t.value} value={t.value}>
@@ -489,12 +497,6 @@ function DraggableInfoItem({
           </option>
         ))}
       </select>
-      <Input
-        placeholder="Label"
-        value={item.label}
-        onChange={e => onUpdate({ label: e.target.value })}
-        className="flex-1"
-      />
       <Input
         placeholder="Value"
         value={item.value}

@@ -1,3 +1,4 @@
+import { revalidateTag } from 'next/cache'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { z } from 'zod'
@@ -50,6 +51,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: result.data as any,
   })
+
+  revalidateTag('card-by-slug')
 
   return NextResponse.json(updatedSection)
 }

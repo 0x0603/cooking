@@ -24,8 +24,8 @@ export function ProfilePage({ card }: ProfilePageProps) {
   const heroY = useTransform(scrollY, [0, 200], [0, -64])
 
   return (
-    <div className="relative min-h-screen bg-white text-[#1a1a1a]">
-      <div className="mx-auto max-w-md">
+    <div className="relative min-h-screen bg-white text-[#1a1a1a] md:bg-neutral-100 md:py-10">
+      <div className="mx-auto max-w-md md:overflow-hidden md:rounded-3xl md:shadow-2xl md:shadow-black/10 md:ring-1 md:ring-black/5">
         {/* Hero — sticky behind content, slides up 64px */}
         <motion.div className="sticky top-0 z-0" style={{ y: heroY }}>
           <Hero

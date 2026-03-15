@@ -7,6 +7,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import type { JsonValue } from '@prisma/client/runtime/library'
 
 import ImageUpload from '@/components/dashboard/image-upload'
+import LivePreview from '@/components/dashboard/live-preview'
 import SectionList from '@/components/dashboard/section-list'
 import Button from '@/components/ui/button'
 import Input from '@/components/ui/input'
@@ -154,7 +155,7 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
   }, [data.sections])
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-7xl">
       {/* Top Bar — sticky */}
       <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
         <div className="flex items-center justify-between">
@@ -233,8 +234,8 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
         </div>
       </div>
 
-      {/* Main content — two columns */}
-      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+      {/* Main content — three columns */}
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr_300px]">
         {/* Left Panel: Card Details */}
         <div className="space-y-4">
           {/* Profile info */}
@@ -260,16 +261,6 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
                 onChange={e => updateField('company', e.target.value)}
                 placeholder="e.g. Acme Corp"
               />
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Bio</label>
-                <textarea
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                  rows={3}
-                  value={data.bio ?? ''}
-                  onChange={e => updateField('bio', e.target.value)}
-                  placeholder="A short bio..."
-                />
-              </div>
               <Input
                 label="Slug"
                 value={data.slug}
@@ -291,18 +282,12 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
                   onChange={url => updateField('coverPhotoUrl', url)}
                 />
               </div>
-              <div>
-                <p className="mb-2 text-sm font-medium text-gray-700">Avatar</p>
-                <ImageUpload
-                  value={data.avatarUrl}
-                  onChange={url => updateField('avatarUrl', url)}
-                />
-              </div>
+              {/* Avatar — hidden for now, can be re-enabled later */}
             </div>
           </div>
         </div>
 
-        {/* Right Panel: Sections */}
+        {/* Center Panel: Sections */}
         <div>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -316,6 +301,22 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
             sections={data.sections}
             onSectionsChange={handleSectionsChange}
             onSectionContentChange={markSectionDirty}
+          />
+        </div>
+
+        {/* Right Panel: Live Preview */}
+        <div className="hidden lg:block">
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
+            Preview
+          </h2>
+          <LivePreview
+            displayName={data.displayName}
+            title={data.title}
+            company={data.company}
+            bio={data.bio}
+            coverPhotoUrl={data.coverPhotoUrl}
+            avatarUrl={data.avatarUrl}
+            sections={data.sections}
           />
         </div>
       </div>

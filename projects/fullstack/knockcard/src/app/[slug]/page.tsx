@@ -1,4 +1,5 @@
 import { unstable_cache } from 'next/cache'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 
 import type { CardData, SectionData } from '@/types'
@@ -89,6 +90,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const description =
     card.bio ?? `${card.displayName} — ${card.title}${card.company ? ` at ${card.company}` : ''}`
 
+  const headersList = headers()
+  const host = headersList.get('host') ?? 'localhost:3000'
+  const protocol = host.includes('localhost') ? 'http' : 'https'
+  const baseUrl = `${protocol}://${host}`
+
   return {
     title: `${card.displayName} | KnockCard`,
     description,
@@ -97,7 +103,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: card.displayName,
       description,
       type: 'profile',
-      url: `https://knockcard.io/${card.slug}`,
+      url: `${baseUrl}/${card.slug}`,
       images: card.coverPhotoUrl ? [{ url: card.coverPhotoUrl, width: 1200, height: 630 }] : [],
     },
     twitter: {
