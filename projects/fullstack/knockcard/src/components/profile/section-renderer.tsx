@@ -34,7 +34,7 @@ function getSectionComponent(type: string) {
 
 export function SectionRenderer({ section }: SectionRendererProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once: true, margin: '-30px' })
+  const isInView = useInView(ref, { once: true, margin: '100px' })
 
   const Component = getSectionComponent(section.type)
 

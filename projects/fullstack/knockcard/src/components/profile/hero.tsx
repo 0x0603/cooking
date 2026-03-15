@@ -68,7 +68,7 @@ export function Hero({ name, slug, coverPhotoUrl }: HeroProps) {
   return (
     <motion.div
       className="relative overflow-hidden bg-[#0a0a0a]"
-      style={{ borderBottomRightRadius: borderRadius, height: '65dvh' }}
+      style={{ borderBottomRightRadius: borderRadius, height: '65dvh', minHeight: 560 }}
     >
       {/* Cover */}
       <motion.div className="absolute inset-0" style={{ y: coverY }}>

@@ -40,7 +40,7 @@ export function ProfilePage({ card }: ProfilePageProps) {
 
         {/* Name overlay */}
         <motion.div
-          className="pointer-events-none sticky top-[calc(65dvh-120px)] z-20 px-6 pb-4"
+          className="pointer-events-none sticky top-[max(calc(65dvh-120px),440px)] z-20 px-6 pb-4"
           style={{ y: nameY, opacity: nameOpacity, marginTop: '-120px' }}
         >
           <h1 className="text-[40px] font-extrabold leading-[1.1] tracking-[-1.5px] text-white [text-shadow:0_2px_20px_rgba(0,0,0,0.6)]">
