@@ -19,11 +19,13 @@ export type ContactItemType =
   | 'education'
   | 'hours'
   | 'note'
+  | 'custom'
 
 export interface ContactItem {
   type: ContactItemType
   label: string
   value: string
+  subtitle?: string
 }
 
 export interface SocialItem {

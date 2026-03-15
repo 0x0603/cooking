@@ -155,9 +155,9 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
   }, [data.sections])
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto max-w-7xl overflow-x-hidden">
       {/* Top Bar — sticky */}
-      <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+      <div className="sticky top-0 z-20 -mx-4 mb-4 border-b border-gray-200 bg-white/95 px-4 py-2.5 backdrop-blur sm:-mx-6 sm:px-6 lg:mb-6 lg:py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -198,9 +198,9 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {isDirty && (
-              <span className="flex items-center gap-1 text-xs text-amber-600">
+              <span className="hidden items-center gap-1 text-xs text-amber-600 sm:flex">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                 Unsaved changes
               </span>
@@ -209,7 +209,7 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
             {/* Publish toggle */}
             <button
               onClick={handleTogglePublish}
-              className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors hover:bg-gray-50"
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-gray-50 sm:gap-2 sm:px-3"
             >
               <span
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
@@ -222,22 +222,24 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
                   }`}
                 />
               </span>
-              <span className={data.isPublished ? 'font-medium text-emerald-700' : 'text-gray-500'}>
+              <span
+                className={`hidden sm:inline ${data.isPublished ? 'font-medium text-emerald-700' : 'text-gray-500'}`}
+              >
                 {data.isPublished ? 'Live' : 'Draft'}
               </span>
             </button>
 
-            <Button onClick={handleSave} disabled={isSaving || !isDirty}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
+            <Button size="sm" onClick={handleSave} disabled={isSaving || !isDirty}>
+              {isSaving ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>
       </div>
 
       {/* Main content — three columns */}
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr_300px]">
+      <div className="grid gap-6 md:grid-cols-[280px_1fr] lg:grid-cols-[280px_1fr_300px]">
         {/* Left Panel: Card Details */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {/* Profile info */}
           <div className="rounded-xl border border-gray-200 bg-white p-5">
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -288,7 +290,7 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
         </div>
 
         {/* Center Panel: Sections */}
-        <div>
+        <div className="min-w-0">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
               Sections

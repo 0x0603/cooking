@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { createPortal } from 'react-dom'
 
 import type { CardTheme } from '@/types'
 
@@ -70,7 +71,7 @@ export function ExchangeForm({ cardId, theme, onClose }: ExchangeFormProps) {
       : 'border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:border-gray-400'
   }`
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <motion.div
         ref={backdropRef}
@@ -195,6 +196,7 @@ export function ExchangeForm({ cardId, theme, onClose }: ExchangeFormProps) {
           )}
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

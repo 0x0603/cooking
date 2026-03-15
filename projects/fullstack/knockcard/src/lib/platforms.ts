@@ -187,11 +187,8 @@ export const PLATFORMS: Record<string, PlatformConfig> = {
 export const PLATFORM_CATEGORIES: Record<string, string[]> = {
   social: ['linkedin', 'github', 'instagram', 'facebook', 'twitter', 'tiktok'],
   messaging: ['zalo', 'whatsapp', 'telegram', 'viber', 'line'],
-  ecommerce: ['shopee', 'lazada'],
-  design: ['behance', 'dribbble', 'figma'],
-  blog: ['medium', 'devto'],
-  video: ['youtube', 'twitch'],
-  music: ['spotify', 'soundcloud'],
+  creative: ['behance', 'dribbble', 'figma', 'medium', 'devto'],
+  media: ['youtube', 'twitch', 'spotify', 'soundcloud'],
   payment: ['momo', 'vnpay', 'paypal'],
 }
 

@@ -108,7 +108,9 @@ export function Hero({ name, slug, coverPhotoUrl }: HeroProps) {
         className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-5 pt-4"
         style={{ y: headerY, opacity: headerOpacity }}
       >
-        <img src="/logo.png" alt="KnockCard" className="h-7 brightness-0 invert" />
+        <a href="/">
+          <img src="/logo.png" alt="KnockCard" className="h-7 brightness-0 invert" />
+        </a>
         <QrButton slug={slug} name={name} />
       </motion.div>
     </motion.div>

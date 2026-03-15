@@ -221,8 +221,14 @@ export function ContactSection({ section }: ContactSectionProps) {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-medium text-[#1a1a1a]">{item.label}</p>
-                  <p className="mt-px truncate text-[12px] text-[#999]">{item.value}</p>
+                  <p className="text-[14px] font-medium text-[#1a1a1a]">
+                    {item.label ||
+                      item.type.charAt(0).toUpperCase() + item.type.slice(1).replace('_', ' ')}
+                  </p>
+                  <p className="mt-px text-[12px] text-[#999]">{item.value}</p>
+                  {item.subtitle && (
+                    <p className="mt-0.5 text-[12px] text-[#999]">{item.subtitle}</p>
+                  )}
                 </div>
 
                 {href && <span className="text-[18px] text-[#ccc]">&rsaquo;</span>}

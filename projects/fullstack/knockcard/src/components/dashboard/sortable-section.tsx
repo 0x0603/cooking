@@ -263,7 +263,7 @@ export default function SortableSection({
 
       {/* Inline editor — accordion body */}
       {isExpanded && (
-        <div className="border-t border-gray-100 px-4 py-4">
+        <div className="min-w-0 overflow-hidden border-t border-gray-100 px-3 py-4 sm:px-4">
           <InlineEditor section={section} onUpdate={onUpdate} />
         </div>
       )}
@@ -343,23 +343,63 @@ function AboutInline({
 
 // ─── Contact ────────────────────────────────────────────────────────────────
 
-const INFO_TYPES: { value: ContactItemType; label: string }[] = [
-  { value: 'phone', label: 'Phone' },
-  { value: 'email', label: 'Email' },
-  { value: 'website', label: 'Website' },
-  { value: 'location', label: 'Location' },
-  { value: 'address', label: 'Address' },
-  { value: 'birthday', label: 'Birthday' },
-  { value: 'fax', label: 'Fax' },
-  { value: 'company', label: 'Company' },
-  { value: 'department', label: 'Department' },
-  { value: 'job_title', label: 'Job Title' },
-  { value: 'pronouns', label: 'Pronouns' },
-  { value: 'languages', label: 'Languages' },
-  { value: 'timezone', label: 'Timezone' },
-  { value: 'education', label: 'Education' },
-  { value: 'hours', label: 'Office Hours' },
-  { value: 'note', label: 'Note' },
+const INFO_TYPES: {
+  value: ContactItemType
+  label: string
+  valuePlaceholder?: string
+  subtitlePlaceholder?: string
+}[] = [
+  { value: 'phone', label: 'Phone', valuePlaceholder: 'Phone number' },
+  { value: 'email', label: 'Email', valuePlaceholder: 'Email address' },
+  { value: 'website', label: 'Website', valuePlaceholder: 'URL' },
+  { value: 'location', label: 'Location', valuePlaceholder: 'City, Country' },
+  { value: 'address', label: 'Address', valuePlaceholder: 'Full address' },
+  { value: 'birthday', label: 'Birthday', valuePlaceholder: 'Date of birth' },
+  { value: 'fax', label: 'Fax', valuePlaceholder: 'Fax number' },
+  {
+    value: 'company',
+    label: 'Company',
+    valuePlaceholder: 'Company name',
+    subtitlePlaceholder: 'Your role or description',
+  },
+  {
+    value: 'department',
+    label: 'Department',
+    valuePlaceholder: 'Department name',
+    subtitlePlaceholder: 'Team or division',
+  },
+  {
+    value: 'job_title',
+    label: 'Job Title',
+    valuePlaceholder: 'Position',
+    subtitlePlaceholder: 'Company or description',
+  },
+  { value: 'pronouns', label: 'Pronouns', valuePlaceholder: 'e.g. she/her' },
+  { value: 'languages', label: 'Languages', valuePlaceholder: 'e.g. Vietnamese, English' },
+  { value: 'timezone', label: 'Timezone', valuePlaceholder: 'e.g. GMT+7' },
+  {
+    value: 'education',
+    label: 'Education',
+    valuePlaceholder: 'School or university',
+    subtitlePlaceholder: 'Degree, major, year...',
+  },
+  {
+    value: 'hours',
+    label: 'Office Hours',
+    valuePlaceholder: 'e.g. Mon-Fri 9AM-5PM',
+  },
+  {
+    value: 'note',
+    label: 'Note',
+    valuePlaceholder: 'Note content',
+    subtitlePlaceholder: 'Additional details',
+  },
+  {
+    value: 'custom',
+    label: 'Custom',
+    valuePlaceholder: 'Value',
+    subtitlePlaceholder: 'Additional details',
+  },
 ]
 
 interface ContactItemWithId extends ContactItem {
@@ -459,17 +499,19 @@ function DraggableInfoItem({
     transition,
   }
 
+  const typeConfig = INFO_TYPES.find(t => t.value === item.type)
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-start gap-2 rounded-lg border border-gray-100 bg-gray-50/50 p-2',
+        'flex gap-2 rounded-lg border border-gray-100 bg-gray-50/50 p-2',
         isDragging && 'z-10 shadow-md'
       )}
     >
       <button
-        className="mt-2 cursor-grab touch-none rounded p-0.5 text-gray-300 hover:text-gray-500 active:cursor-grabbing"
+        className="mt-2 shrink-0 cursor-grab touch-none rounded p-0.5 text-gray-300 hover:text-gray-500 active:cursor-grabbing"
         {...attributes}
         {...listeners}
       >
@@ -482,30 +524,56 @@ function DraggableInfoItem({
           <circle cx="11" cy="13" r="1.5" />
         </svg>
       </button>
-      <select
-        className="rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm"
-        value={item.type}
-        onChange={e => {
-          const newType = e.target.value as ContactItemType
-          const newLabel = INFO_TYPES.find(t => t.value === newType)?.label ?? newType
-          onUpdate({ type: newType, label: newLabel })
-        }}
-      >
-        {INFO_TYPES.map(t => (
-          <option key={t.value} value={t.value}>
-            {t.label}
-          </option>
-        ))}
-      </select>
-      <Input
-        placeholder="Value"
-        value={item.value}
-        onChange={e => onUpdate({ value: e.target.value })}
-        className="flex-1"
-      />
+
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+          <select
+            className="min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm sm:w-36 sm:shrink-0"
+            value={item.type}
+            onChange={e => {
+              const newType = e.target.value as ContactItemType
+              const newLabel =
+                newType === 'custom'
+                  ? ''
+                  : (INFO_TYPES.find(t => t.value === newType)?.label ?? newType)
+              onUpdate({ type: newType, label: newLabel })
+            }}
+          >
+            {INFO_TYPES.map(t => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          {item.type === 'custom' && (
+            <div className="sm:w-32 sm:shrink-0">
+              <Input
+                placeholder="Label"
+                value={item.label}
+                onChange={e => onUpdate({ label: e.target.value })}
+              />
+            </div>
+          )}
+          <div className="sm:flex-1">
+            <Input
+              placeholder={typeConfig?.valuePlaceholder ?? 'Value'}
+              value={item.value}
+              onChange={e => onUpdate({ value: e.target.value })}
+            />
+          </div>
+        </div>
+        {typeConfig?.subtitlePlaceholder && (
+          <Input
+            placeholder={typeConfig.subtitlePlaceholder}
+            value={item.subtitle ?? ''}
+            onChange={e => onUpdate({ subtitle: e.target.value || undefined })}
+          />
+        )}
+      </div>
+
       <button
         onClick={onRemove}
-        className="mt-2 rounded p-1 text-gray-400 transition-colors hover:text-red-500"
+        className="mt-2 shrink-0 rounded p-1 text-gray-400 transition-colors hover:text-red-500"
       >
         <svg
           className="h-4 w-4"
@@ -618,33 +686,36 @@ function LinksInline({
   return (
     <div className="space-y-3">
       {items.map((item, index) => (
-        <div key={index} className="flex items-start gap-2">
-          <Input
-            placeholder="Label"
-            value={item.label}
-            onChange={e => updateItem(index, { label: e.target.value })}
-            className="flex-1"
-          />
-          <Input
-            placeholder="https://..."
-            value={item.url}
-            onChange={e => updateItem(index, { url: e.target.value })}
-            className="flex-1"
-          />
-          <button
-            onClick={() => removeItem(index)}
-            className="mt-2 rounded p-1 text-gray-400 transition-colors hover:text-red-500"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
+        <div key={index} className="rounded-lg border border-gray-100 bg-gray-50/50 p-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-gray-500">Link {index + 1}</span>
+            <button
+              onClick={() => removeItem(index)}
+              className="rounded p-1 text-gray-400 transition-colors hover:text-red-500"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="mt-1.5 space-y-2">
+            <Input
+              placeholder="Label"
+              value={item.label}
+              onChange={e => updateItem(index, { label: e.target.value })}
+            />
+            <Input
+              placeholder="https://..."
+              value={item.url}
+              onChange={e => updateItem(index, { url: e.target.value })}
+            />
+          </div>
         </div>
       ))}
 
