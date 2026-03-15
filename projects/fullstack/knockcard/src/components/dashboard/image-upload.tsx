@@ -20,15 +20,17 @@ export default function ImageUpload({ value, onChange }: ImageUploadProps) {
       try {
         const formData = new FormData()
         formData.append('file', file)
+        formData.append('upload_preset', 'knockcard')
 
-        const res = await fetch('/api/upload', {
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
           method: 'POST',
           body: formData,
         })
 
         if (res.ok) {
           const data = await res.json()
-          onChange(data.url)
+          onChange(data.secure_url)
         }
       } finally {
         setIsUploading(false)
