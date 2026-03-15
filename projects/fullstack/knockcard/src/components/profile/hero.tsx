@@ -58,20 +58,11 @@ const particles = [
 export function Hero({ name, slug, coverPhotoUrl }: HeroProps) {
   const { scrollY } = useScroll()
 
-  // Cover: only drift up slightly, no zoom
   const coverY = useTransform(scrollY, [0, 500], [0, 40])
-
-  // Vignette: darkens as content slides over
   const vignetteOpacity = useTransform(scrollY, [0, 400], [0, 0.5])
-
-  // Brand logo: fades + slides up first
-  const brandY = useTransform(scrollY, [0, 150], [0, -30])
-  const brandOpacity = useTransform(scrollY, [0, 100], [1, 0])
-
-  // Border radius shrinks
+  const headerOpacity = useTransform(scrollY, [0, 100], [1, 0])
+  const headerY = useTransform(scrollY, [0, 100], [0, -20])
   const borderRadius = useTransform(scrollY, [0, 300], [40, 0])
-
-  // Shimmer fades
   const shimmerOpacity = useTransform(scrollY, [0, 300], [1, 0.3])
 
   return (
@@ -79,7 +70,7 @@ export function Hero({ name, slug, coverPhotoUrl }: HeroProps) {
       className="relative overflow-hidden bg-[#0a0a0a]"
       style={{ borderBottomRightRadius: borderRadius, height: '65vh' }}
     >
-      {/* Cover — zoom + drift */}
+      {/* Cover */}
       <motion.div className="absolute inset-0" style={{ y: coverY }}>
         {coverPhotoUrl ? (
           <img src={coverPhotoUrl} alt={`${name} cover`} className="h-full w-full object-cover" />
@@ -88,10 +79,10 @@ export function Hero({ name, slug, coverPhotoUrl }: HeroProps) {
         )}
       </motion.div>
 
-      {/* Bottom gradient — strong enough for light photos */}
+      {/* Gradient */}
       <div className="absolute bottom-0 left-0 right-0 h-[75%] bg-gradient-to-t from-black from-[15%] via-black/70 to-transparent" />
 
-      {/* Vignette — darkens on scroll */}
+      {/* Vignette on scroll */}
       <motion.div className="absolute inset-0 bg-black" style={{ opacity: vignetteOpacity }} />
 
       {/* Shimmer */}
@@ -112,16 +103,14 @@ export function Hero({ name, slug, coverPhotoUrl }: HeroProps) {
         <FloatingParticle key={i} {...p} />
       ))}
 
-      {/* Top bar: brand + QR button */}
+      {/* Header: logo + QR button */}
       <motion.div
-        className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-5"
-        style={{ y: brandY, opacity: brandOpacity }}
+        className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-5 pt-4"
+        style={{ y: headerY, opacity: headerOpacity }}
       >
-        <div />
+        <img src="/logo.png" alt="KnockCard" className="h-7 brightness-0 invert" />
         <QrButton slug={slug} name={name} />
       </motion.div>
-
-      {/* Name is rendered in profile-page.tsx as a separate z-layer */}
     </motion.div>
   )
 }

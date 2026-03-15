@@ -2,13 +2,11 @@
 
 export function Footer() {
   return (
-    <footer className="mt-auto px-5 pb-8 pt-4 text-center">
-      <a
-        href="https://knockcard.io"
-        className="text-[9px] font-semibold uppercase tracking-[3px] text-[#ccc] transition-colors hover:text-[#999]"
-      >
+    <footer className="mt-auto flex flex-col items-center gap-2 px-5 pb-8 pt-6">
+      <img src="/logo.png" alt="KnockCard" className="h-12" />
+      <span className="text-[9px] font-semibold uppercase tracking-[3px] text-[#ccc]">
         Powered by KnockCard
-      </a>
+      </span>
     </footer>
   )
 }
