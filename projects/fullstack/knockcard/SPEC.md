@@ -12,7 +12,7 @@
 | Styling     | Tailwind CSS + Framer Motion | Rapid UI + animations from prototype |
 | Database    | PostgreSQL (Neon)            | Free tier 0.5GB, managed             |
 | ORM         | Prisma                       | Type-safe queries, migrations        |
-| Auth        | NextAuth.js                  | Google/GitHub OAuth                  |
+| Auth        | NextAuth.js                  | Google OAuth                         |
 | Storage     | Cloudinary                   | Free 25GB, auto image optimization   |
 | Cache       | Upstash Redis                | Free 10K commands/day, rate limiting |
 | Drag & Drop | dnd-kit                      | Lightweight, accessible              |
@@ -166,7 +166,7 @@
 
 ```
 /                          Landing page (marketing)
-/login                     Auth (Google/GitHub OAuth)
+/login                     Auth (Google OAuth)
 /dashboard                 Card list + analytics overview
 /dashboard/cards/new       Create new card
 /dashboard/cards/:id       Edit card (drag-drop sections)
@@ -224,7 +224,7 @@ GET    /api/og/:slug             Open Graph image (dynamic)
 
 ### Dashboard
 
-- [ ] Google/GitHub OAuth login
+- [ ] Google OAuth login
 - [ ] Create / edit / delete cards
 - [ ] Upload cover photo + avatar (Cloudinary)
 - [ ] Drag-drop section ordering (dnd-kit)
@@ -243,7 +243,7 @@ GET    /api/og/:slug             Open Graph image (dynamic)
 ### Card Activation (sell NFC cards)
 
 - [ ] Pre-create cards with `activationCode` (6-char random), `userId = null`
-- [ ] `/activate?code=ABC123` page → login Google/GitHub → claim card to account
+- [ ] `/activate?code=ABC123` page → login Google → claim card to account
 - [ ] NFC tap → `knockcard.io/activate?code=xxx` for unclaimed cards
 - [ ] After claim → redirect to dashboard edit card
 - [ ] Admin panel: batch create cards with activation codes

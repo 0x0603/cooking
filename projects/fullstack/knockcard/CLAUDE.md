@@ -108,5 +108,4 @@ Copy `.env.example` to `.env` and fill in values. Required for local dev:
 - `NEXTAUTH_SECRET` — random string (`openssl rand -base64 32`)
 - `NEXTAUTH_URL` — `http://localhost:3000`
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — Google OAuth
-- `GITHUB_ID` / `GITHUB_SECRET` — GitHub OAuth
 - `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`
