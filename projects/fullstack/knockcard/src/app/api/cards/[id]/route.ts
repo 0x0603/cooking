@@ -10,6 +10,8 @@ const updateCardSchema = z.object({
   title: z.string().max(200).optional(),
   company: z.string().max(200).nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),
+  coverPhotoUrl: z.string().url().nullable().optional(),
+  avatarUrl: z.string().url().nullable().optional(),
   theme: z.string().max(50).optional(),
   themeConfig: z.record(z.unknown()).nullable().optional(),
   isPublished: z.boolean().optional(),
