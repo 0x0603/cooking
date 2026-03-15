@@ -80,7 +80,7 @@ export function Hero({ name, slug, coverPhotoUrl }: HeroProps) {
       </motion.div>
 
       {/* Gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-[75%] bg-gradient-to-t from-black from-[15%] via-black/70 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-[50%] bg-gradient-to-t from-black/80 to-transparent" />
 
       {/* Vignette on scroll */}
       <motion.div className="absolute inset-0 bg-black" style={{ opacity: vignetteOpacity }} />
