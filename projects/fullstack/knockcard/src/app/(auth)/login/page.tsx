@@ -6,8 +6,25 @@ import Button from '@/components/ui/button'
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm space-y-8 rounded-2xl bg-white p-8 shadow-lg">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
+      {/* Video background */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        poster="https://www.appsflyer.com/wp-content/uploads/2025/10/background-video-png.avif"
+        className="absolute inset-0 h-full w-full object-cover"
+      >
+        <source
+          src="https://www.appsflyer.com/wp-content/uploads/2025/10/01-1.mp4"
+          type="video/mp4"
+        />
+      </video>
+      <div className="absolute inset-0 bg-white/40 backdrop-blur-sm" />
+
+      <div className="relative z-10 w-full max-w-sm space-y-8 rounded-2xl border border-white/40 bg-white/80 p-8 shadow-2xl backdrop-blur-xl">
         {/* Logo / Branding */}
         <div className="text-center">
           <img src="/logo.png" alt="KnockCard" className="mx-auto h-16" />
