@@ -490,6 +490,7 @@ function DraggableInfoItem({
   onUpdate: (updates: Partial<ContactItem>) => void
   onRemove: () => void
 }) {
+  const [isUploading, setIsUploading] = useState(false)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item._id,
   })
@@ -500,6 +501,30 @@ function DraggableInfoItem({
   }
 
   const typeConfig = INFO_TYPES.find(t => t.value === item.type)
+
+  async function handleIconUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) {
+      return
+    }
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', 'knockcard')
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      })
+      if (res.ok) {
+        const data = await res.json()
+        onUpdate({ iconUrl: data.secure_url })
+      }
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   return (
     <div
@@ -524,6 +549,70 @@ function DraggableInfoItem({
           <circle cx="11" cy="13" r="1.5" />
         </svg>
       </button>
+
+      {/* Icon upload */}
+      <div className="mt-1 shrink-0">
+        {item.iconUrl ? (
+          <div className="group relative">
+            <img src={item.iconUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
+            <button
+              onClick={() => onUpdate({ iconUrl: undefined })}
+              className="absolute -right-1 -top-1 hidden rounded-full bg-red-500 p-0.5 text-white shadow group-hover:block"
+            >
+              <svg
+                className="h-2.5 w-2.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2.5}
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <label
+            className={cn(
+              'flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-dashed border-gray-300 text-gray-400 transition-colors hover:border-gray-400 hover:text-gray-500',
+              isUploading && 'pointer-events-none opacity-50'
+            )}
+            title="Upload icon"
+          >
+            {isUploading ? (
+              <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M2.25 18h15A2.25 2.25 0 0019.5 15.75V6a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6v9.75A2.25 2.25 0 006.75 18z"
+                />
+              </svg>
+            )}
+            <input type="file" accept="image/*" className="hidden" onChange={handleIconUpload} />
+          </label>
+        )}
+      </div>
 
       <div className="min-w-0 flex-1 space-y-1.5">
         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">

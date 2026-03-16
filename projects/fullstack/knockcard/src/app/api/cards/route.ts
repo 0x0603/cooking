@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         createMany: {
           data: [
             { type: 'about', title: 'About', content: {}, sortOrder: 0 },
-            { type: 'contact', title: 'Contact', content: {}, sortOrder: 1 },
+            { type: 'contact', title: 'Information', content: {}, sortOrder: 1 },
             { type: 'social', title: 'Social', content: {}, sortOrder: 2 },
           ],
         },

@@ -26,6 +26,7 @@ export interface ContactItem {
   label: string
   value: string
   subtitle?: string
+  iconUrl?: string
 }
 
 export interface SocialItem {

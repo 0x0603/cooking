@@ -18,11 +18,12 @@ export function SaveContactButton({ card, className }: SaveContactButtonProps) {
     const email = content?.items?.find(i => i.type === 'email')?.value
     const website = content?.items?.find(i => i.type === 'website')?.value
     const address = content?.items?.find(i => i.type === 'location')?.value
+    const companyFromSection = content?.items?.find(i => i.type === 'company')?.value
 
     const vcf = generateVCard({
       name: card.displayName,
       title: card.title,
-      company: card.company ?? undefined,
+      company: card.company ?? companyFromSection ?? undefined,
       phone,
       email,
       website,

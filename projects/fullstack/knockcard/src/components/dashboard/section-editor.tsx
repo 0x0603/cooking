@@ -136,6 +136,7 @@ const CONTACT_TYPES: { value: ContactItemType; label: string }[] = [
   { value: 'email', label: 'Email' },
   { value: 'website', label: 'Website' },
   { value: 'location', label: 'Location' },
+  { value: 'company', label: 'Company' },
 ]
 
 function ContactEditor({
@@ -210,7 +211,7 @@ function ContactEditor({
       ))}
 
       <Button variant="ghost" size="sm" onClick={addItem}>
-        + Add Contact Item
+        + Add Item
       </Button>
 
       <div className="flex justify-end">

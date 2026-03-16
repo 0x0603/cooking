@@ -216,8 +216,12 @@ export function ContactSection({ section }: ContactSectionProps) {
                   !isLast ? 'border-b border-[#f0f0f0]' : ''
                 }`}
               >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[11px] bg-[#f5f5f5]">
-                  {getContactIcon(item.type)}
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-[11px] bg-[#f5f5f5]">
+                  {item.iconUrl ? (
+                    <img src={item.iconUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    getContactIcon(item.type)
+                  )}
                 </div>
 
                 <div className="min-w-0 flex-1">

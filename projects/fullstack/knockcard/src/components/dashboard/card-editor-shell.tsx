@@ -133,7 +133,7 @@ export default function CardEditorShell({ initialData }: CardEditorShellProps) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type,
-        title: type.charAt(0).toUpperCase() + type.slice(1),
+        title: type === 'contact' ? 'Information' : type.charAt(0).toUpperCase() + type.slice(1),
         content: {},
         sortOrder: data.sections.length,
       }),

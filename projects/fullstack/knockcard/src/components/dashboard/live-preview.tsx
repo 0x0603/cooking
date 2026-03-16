@@ -201,8 +201,12 @@ function PreviewContact({ section }: { section: SectionItem }) {
       <div className="space-y-1">
         {items.map((item, i) => (
           <div key={i} className="flex items-center gap-1.5">
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500">
-              <InfoIcon type={item.type} />
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-100 text-gray-500">
+              {item.iconUrl ? (
+                <img src={item.iconUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <InfoIcon type={item.type} />
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[9px] font-medium text-gray-800">
