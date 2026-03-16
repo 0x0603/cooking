@@ -952,9 +952,9 @@ function Testimonials() {
         </Reveal>
 
         {/* Scrollable cards */}
-        <div className="mt-16 -mx-6 px-6">
+        <div className="mt-16 overflow-hidden">
           <div
-            className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
+            className="flex gap-5 overflow-x-auto px-1 pb-4 snap-x snap-mandatory scrollbar-hide"
             style={{ scrollbarWidth: 'none' }}
           >
             {TESTIMONIALS.map(t => (
@@ -1289,7 +1289,7 @@ function Footer() {
 
 export default function LandingPage() {
   return (
-    <>
+    <div className="overflow-x-hidden">
       {/* Load DM Serif Display for display headings */}
       {/* eslint-disable-next-line */}
       <link
@@ -1310,6 +1310,6 @@ export default function LandingPage() {
       <Pricing />
       <CtaBanner />
       <Footer />
-    </>
+    </div>
   )
 }
