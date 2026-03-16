@@ -100,6 +100,28 @@ npx prisma db push   # Push schema to database
 npx prisma studio    # Open Prisma Studio (DB GUI)
 ```
 
+## Monetization Strategy
+
+**Pricing tiers:** Free (1 card, 3 sections, 7-day analytics) → Pro $5/mo (unlimited, remove watermark, premium themes, lead capture) → Team $12/user/mo (custom domain, CRM integrations, team dashboard).
+
+**Priority features to build:**
+
+1. Premium themes + remove watermark + multiple cards limit (easiest, clearest upgrade reason)
+2. Advanced analytics (charts, referrers, device breakdown)
+3. Lead capture form + CSV export
+4. NFC physical card sales (high margin one-time revenue)
+5. Team management for B2B
+
+## Market Reality
+
+**Challenges:** Strong competitors (Linktree, Blinq, Popl, HiHello, Tapni) with millions in funding. NFC business card is a small niche. Low willingness to pay for individuals. High churn.
+
+**Opportunities:** B2B/Team is where real money is (20 companies × 50 users × $12 = $12K MRR). Physical NFC card sales have high margins. Local SEO ("NFC business card Vietnam") is unclaimed.
+
+**Verdict:** Best treated as a learning/portfolio project. For serious business, need a specific niche (e.g., NFC cards for VN realtors) rather than competing head-on with Linktree/Popl. Validate by finding 10 paying B2B customers first before scaling.
+
+**Target audience (priority):** Sales people → Realtors → Founders/Freelancers → Event attendees → Teams/Agencies.
+
 ## Environment Variables
 
 Copy `.env.example` to `.env` and fill in values. Required for local dev:

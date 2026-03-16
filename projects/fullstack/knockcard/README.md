@@ -85,7 +85,7 @@ src/
 ## How It Works
 
 1. **User signs in** via Google or GitHub
-2. **Creates a card** with a unique slug (e.g., `knockcard.io/sang`)
+2. **Creates a card** with a unique slug (e.g., `knockcard.xyz/sang`)
 3. **Edits sections** — drag to reorder, toggle visibility, customize content
 4. **Publishes** the card
 5. **Programs NFC tag** with the profile URL

@@ -1,7 +1,7 @@
 # KnockCard — Product Specification
 
 > NFC digital business card platform. Tap → Open profile → Connect.
-> Domain: **knockcard.io**
+> Domain: **knockcard.xyz**
 
 ## Tech Stack
 
@@ -17,7 +17,7 @@
 | Cache       | Upstash Redis                | Free 10K commands/day, rate limiting |
 | Drag & Drop | dnd-kit                      | Lightweight, accessible              |
 | Deploy      | Vercel (Hobby)               | $0/mo, 100GB bandwidth               |
-| Domain      | knockcard.io                 | ~$12/year                            |
+| Domain      | knockcard.xyz                | ~$12/year                            |
 
 **Total MVP cost: $0/mo** (domain ~$12/year only)
 
@@ -244,7 +244,7 @@ GET    /api/og/:slug             Open Graph image (dynamic)
 
 - [ ] Pre-create cards with `activationCode` (6-char random), `userId = null`
 - [ ] `/activate?code=ABC123` page → login Google → claim card to account
-- [ ] NFC tap → `knockcard.io/activate?code=xxx` for unclaimed cards
+- [ ] NFC tap → `knockcard.xyz/activate?code=xxx` for unclaimed cards
 - [ ] After claim → redirect to dashboard edit card
 - [ ] Admin panel: batch create cards with activation codes
 - [ ] Two user flows:
