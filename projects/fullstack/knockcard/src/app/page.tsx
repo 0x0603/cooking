@@ -208,7 +208,14 @@ function Navbar() {
 function Hero() {
   return (
     <section className="relative flex min-h-[100vh] items-center justify-center overflow-hidden">
-      {/* Background video */}
+      {/* Background: static image on mobile, video on desktop */}
+      <div
+        className="absolute inset-0 bg-cover bg-center md:hidden"
+        style={{
+          backgroundImage:
+            'url(https://www.appsflyer.com/wp-content/uploads/2025/10/background-video-png.avif)',
+        }}
+      />
       <video
         autoPlay
         muted
@@ -216,7 +223,7 @@ function Hero() {
         playsInline
         preload="metadata"
         poster="https://www.appsflyer.com/wp-content/uploads/2025/10/background-video-png.avif"
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 hidden h-full w-full object-cover md:block"
       >
         <source
           src="https://www.appsflyer.com/wp-content/uploads/2025/10/01-1.mp4"

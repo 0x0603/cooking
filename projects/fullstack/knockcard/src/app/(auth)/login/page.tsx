@@ -7,7 +7,14 @@ import Button from '@/components/ui/button'
 export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
-      {/* Video background */}
+      {/* Background: static image on mobile, video on desktop */}
+      <div
+        className="absolute inset-0 bg-cover bg-center md:hidden"
+        style={{
+          backgroundImage:
+            'url(https://www.appsflyer.com/wp-content/uploads/2025/10/background-video-png.avif)',
+        }}
+      />
       <video
         autoPlay
         muted
@@ -15,7 +22,7 @@ export default function LoginPage() {
         playsInline
         preload="metadata"
         poster="https://www.appsflyer.com/wp-content/uploads/2025/10/background-video-png.avif"
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 hidden h-full w-full object-cover md:block"
       >
         <source
           src="https://www.appsflyer.com/wp-content/uploads/2025/10/01-1.mp4"
