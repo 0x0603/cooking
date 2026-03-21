@@ -28,6 +28,8 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_USER_ID = int(os.getenv("TELEGRAM_USER_ID", "0"))
 REPO_PATH = os.getenv("REPO_PATH", ".")
 CLAUDE_PATH = os.getenv("CLAUDE_PATH", "claude")
+DATA_DIR = Path(os.getenv("DATA_DIR", "data"))
+SESSIONS_FILE = DATA_DIR / "sessions.json"
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -36,10 +38,61 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Store claude session IDs per telegram chat
-sessions: dict[int, str] = {}
+# --- Session persistence ---
+# Structure: {chat_id: {"current": session_id|null, "saved": {name: session_id}}}
+
+def _default_chat_data() -> dict:
+    return {"current": None, "saved": {}}
+
+
+def _load_sessions() -> dict[int, dict]:
+    if SESSIONS_FILE.exists():
+        try:
+            data = json.loads(SESSIONS_FILE.read_text())
+            result = {}
+            for k, v in data.items():
+                if isinstance(v, str):
+                    # Migrate old format: {chat_id: session_id}
+                    result[int(k)] = {"current": v, "saved": {}}
+                else:
+                    result[int(k)] = v
+            return result
+        except Exception:
+            logger.warning("Failed to load sessions file, starting fresh")
+    return {}
+
+
+def _save_sessions():
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    SESSIONS_FILE.write_text(json.dumps(
+        {str(k): v for k, v in sessions.items()},
+        indent=2,
+    ))
+
+
+def _get_current_session(chat_id: int) -> str | None:
+    return sessions.get(chat_id, _default_chat_data()).get("current")
+
+
+def _set_current_session(chat_id: int, session_id: str | None):
+    if chat_id not in sessions:
+        sessions[chat_id] = _default_chat_data()
+    sessions[chat_id]["current"] = session_id
+    _save_sessions()
+
+
+# Store claude session data per telegram chat
+sessions: dict[int, dict] = _load_sessions()
 # Track message IDs for /clear
 message_ids: dict[int, list[int]] = {}
+# Per-chat lock to prevent concurrent Claude calls
+chat_locks: dict[int, asyncio.Lock] = {}
+
+
+def get_lock(chat_id: int) -> asyncio.Lock:
+    if chat_id not in chat_locks:
+        chat_locks[chat_id] = asyncio.Lock()
+    return chat_locks[chat_id]
 
 
 def track_message(chat_id: int, msg_id: int):
@@ -82,8 +135,8 @@ def _convert_inline(text: str) -> str:
 
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", _link_repl, text)
 
-    # Step 2: escape remaining text for HTML
-    t = html_escape(text)
+    # Step 2: escape remaining text for HTML (quote=False to keep ' and " readable)
+    t = html_escape(text, quote=False)
 
     # Step 3: bold / italic / strikethrough
     t = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", t)
@@ -236,15 +289,20 @@ def _do_format(text: str) -> str:
 
 
 def _strip_html(text: str) -> str:
-    """Remove HTML tags so fallback plain text is clean."""
-    return re.sub(r"<[^>]+>", "", text)
+    """Remove HTML tags and unescape entities so fallback plain text is clean."""
+    text = re.sub(r"<[^>]+>", "", text)
+    # unescape HTML entities back to plain characters
+    text = text.replace("&lt;", "<").replace("&gt;", ">")
+    text = text.replace("&amp;", "&").replace("&quot;", '"')
+    return text
 
 
 async def _safe_edit(message, text: str, parse_mode: str | None = "HTML"):
     """Edit a message with HTML, fallback to plain text if parse fails."""
     try:
         await message.edit_text(text, parse_mode=parse_mode, disable_web_page_preview=True)
-    except Exception:
+    except Exception as e:
+        logger.warning("HTML edit failed: %s", e)
         try:
             await message.edit_text(_strip_html(text), disable_web_page_preview=True)
         except Exception:
@@ -255,7 +313,8 @@ async def _safe_reply(update_message, text: str, parse_mode: str | None = "HTML"
     """Reply with HTML, fallback to plain text if parse fails."""
     try:
         return await update_message.reply_text(text, parse_mode=parse_mode, disable_web_page_preview=True)
-    except Exception:
+    except Exception as e:
+        logger.warning("HTML reply failed: %s", e)
         return await update_message.reply_text(_strip_html(text), disable_web_page_preview=True)
 
 
@@ -267,7 +326,7 @@ async def run_claude_stream(
     cmd = [CLAUDE_PATH, "-p", "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"]
 
     # Resume existing session if available
-    session_id = sessions.get(chat_id)
+    session_id = _get_current_session(chat_id)
     if session_id:
         cmd.extend(["--resume", session_id])
 
@@ -329,7 +388,7 @@ async def run_claude_stream(
 
                 # Capture session ID from result message
                 if msg_type == "result" and data.get("session_id"):
-                    sessions[chat_id] = data["session_id"]
+                    _set_current_session(chat_id, data["session_id"])
                     logger.info("Session %s saved for chat %s", data["session_id"], chat_id)
                     # Also grab final result text
                     if data.get("result"):
@@ -384,35 +443,6 @@ async def run_claude_stream(
 
         return full_text
 
-    except FileNotFoundError:
-        return "❌ Claude CLI không tìm thấy. Kiểm tra CLAUDE_PATH."
-
-
-async def run_claude(prompt: str, image_path: str | None = None) -> str:
-    """Run claude CLI in print mode (non-streaming fallback)."""
-    cmd = [CLAUDE_PATH, "-p", "--output-format", "text", "--dangerously-skip-permissions"]
-    if image_path:
-        cmd.extend(["--input-file", image_path])
-    cmd.append(prompt)
-
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=REPO_PATH,
-        )
-        stdout, stderr = await asyncio.wait_for(
-            proc.communicate(), timeout=300
-        )
-
-        if proc.returncode != 0:
-            error = stderr.decode().strip()
-            return f"❌ Claude error:\n```\n{error}\n```"
-
-        return stdout.decode().strip()
-    except asyncio.TimeoutError:
-        return "⏰ Claude timeout (5 phút). Thử lại với prompt ngắn hơn."
     except FileNotFoundError:
         return "❌ Claude CLI không tìm thấy. Kiểm tra CLAUDE_PATH."
 
@@ -482,20 +512,28 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     chat_id = update.effective_chat.id
-    has_session = chat_id in sessions
+    current = _get_current_session(chat_id)
+    saved = sessions.get(chat_id, _default_chat_data()).get("saved", {})
+    saved_count = len(saved)
 
     await update.message.reply_text(
         "🤖 Tele Agent — Claude Code qua Telegram\n\n"
         "Commands:\n"
         "/changes — Xem code changes (git diff)\n"
-        "/review — Claude phân tích code changes\n"
+        "/review — Claude review code changes\n"
         "/status — Git status\n"
         "/log — 10 commits gần nhất\n"
-        "/branch — Branch hiện tại\n"
-        "/ask <prompt> — Hỏi Claude về repo\n"
-        "/new — Bắt đầu conversation mới\n\n"
+        "/branch — Danh sách branches\n"
+        "/ask <prompt> — Hỏi Claude về repo\n\n"
+        "Conversations:\n"
+        "/new — Bắt đầu conversation mới\n"
+        "/save <tên> — Lưu conversation hiện tại\n"
+        "/list — Xem danh sách conversations\n"
+        "/switch <tên> — Chuyển conversation\n"
+        "/delete <tên> — Xoá conversation\n\n"
         "Hoặc gửi tin nhắn/ảnh trực tiếp để chat với Claude.\n\n"
-        f"Session: {'✅ active' if has_session else '🆕 chưa có'}"
+        f"Session: {'✅ active' if current else '🆕 chưa có'}"
+        f"{f' | 💾 {saved_count} saved' if saved_count else ''}"
     )
 
 
@@ -530,28 +568,36 @@ async def cmd_changes_detail(
     if not is_authorized(update):
         return
 
-    thinking = await update.message.reply_text("🔍 Đang phân tích changes...")
+    chat_id = update.effective_chat.id
+    lock = get_lock(chat_id)
 
-    diff = await run_git(["diff"])
-    staged = await run_git(["diff", "--cached"])
-    full_diff = f"{staged}\n{diff}".strip()
-
-    await thinking.delete()
-
-    if not full_diff:
-        await update.message.reply_text("✅ Không có changes nào.")
+    if lock.locked():
+        await _safe_reply(update.message, "⏳ Đang xử lý tin nhắn trước, vui lòng đợi...")
         return
 
-    prompt = (
-        f"Phân tích code changes sau đây. "
-        f"Tóm tắt những gì đã thay đổi, highlight potential issues:\n\n"
-        f"```diff\n{full_diff[:10000]}\n```"
-    )
+    async with lock:
+        thinking = await update.message.reply_text("🔍 Đang phân tích changes...")
 
-    streaming_msg = await update.message.reply_text("🔍 ...")
-    track_message(update.effective_chat.id, streaming_msg.message_id)
-    response = await run_claude_stream(prompt, streaming_msg, update.effective_chat.id, bot=update.get_bot())
-    await send_long_message(update, response, streaming_msg)
+        diff = await run_git(["diff"])
+        staged = await run_git(["diff", "--cached"])
+        full_diff = f"{staged}\n{diff}".strip()
+
+        await thinking.delete()
+
+        if not full_diff:
+            await update.message.reply_text("✅ Không có changes nào.")
+            return
+
+        prompt = (
+            f"Phân tích code changes sau đây. "
+            f"Tóm tắt những gì đã thay đổi, highlight potential issues:\n\n"
+            f"```diff\n{full_diff[:10000]}\n```"
+        )
+
+        streaming_msg = await update.message.reply_text("🔍 ...")
+        track_message(chat_id, streaming_msg.message_id)
+        response = await run_claude_stream(prompt, streaming_msg, chat_id, bot=update.get_bot())
+        await send_long_message(update, response, streaming_msg)
 
 
 async def cmd_new(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -560,11 +606,121 @@ async def cmd_new(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     chat_id = update.effective_chat.id
-    if chat_id in sessions:
-        del sessions[chat_id]
+    if _get_current_session(chat_id):
+        _set_current_session(chat_id, None)
         await update.message.reply_text("🆕 Conversation mới. Context đã reset.")
     else:
         await update.message.reply_text("🆕 Chưa có session nào. Gửi tin nhắn để bắt đầu.")
+
+
+async def cmd_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Save current conversation with a name."""
+    if not is_authorized(update):
+        return
+
+    name = " ".join(context.args).strip() if context.args else ""
+    if not name:
+        await update.message.reply_text("Usage: /save <tên conversation>")
+        return
+
+    chat_id = update.effective_chat.id
+    current = _get_current_session(chat_id)
+
+    if not current:
+        await update.message.reply_text("❌ Chưa có conversation nào để lưu.")
+        return
+
+    if chat_id not in sessions:
+        sessions[chat_id] = _default_chat_data()
+    sessions[chat_id]["saved"][name] = current
+    _save_sessions()
+
+    await update.message.reply_text(f"💾 Đã lưu conversation: <b>{html_escape(name)}</b>", parse_mode="HTML")
+
+
+async def cmd_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """List all saved conversations."""
+    if not is_authorized(update):
+        return
+
+    chat_id = update.effective_chat.id
+    saved = sessions.get(chat_id, _default_chat_data()).get("saved", {})
+    current = _get_current_session(chat_id)
+
+    if not saved and not current:
+        await update.message.reply_text("📭 Chưa có conversation nào.")
+        return
+
+    lines = ["📋 <b>Conversations:</b>\n"]
+
+    if current:
+        # Check if current matches any saved name
+        active_name = None
+        for name, sid in saved.items():
+            if sid == current:
+                active_name = name
+                break
+        if active_name:
+            lines.append(f"▶️ Active: <b>{html_escape(active_name)}</b>")
+        else:
+            lines.append(f"▶️ Active: <i>(chưa lưu)</i>")
+
+    if saved:
+        lines.append("")
+        for name, sid in saved.items():
+            marker = " 🟢" if sid == current else ""
+            lines.append(f"• <code>{html_escape(name)}</code>{marker}")
+
+    await _safe_reply(update.message, "\n".join(lines))
+
+
+async def cmd_switch(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Switch to a saved conversation."""
+    if not is_authorized(update):
+        return
+
+    name = " ".join(context.args).strip() if context.args else ""
+    if not name:
+        await update.message.reply_text("Usage: /switch <tên conversation>")
+        return
+
+    chat_id = update.effective_chat.id
+    saved = sessions.get(chat_id, _default_chat_data()).get("saved", {})
+
+    if name not in saved:
+        available = ", ".join(f"<code>{html_escape(n)}</code>" for n in saved) if saved else "không có"
+        await _safe_reply(update.message, f"❌ Không tìm thấy: <b>{html_escape(name)}</b>\nCó: {available}")
+        return
+
+    _set_current_session(chat_id, saved[name])
+    await _safe_reply(update.message, f"🔄 Đã chuyển sang: <b>{html_escape(name)}</b>")
+
+
+async def cmd_delete_conv(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Delete a saved conversation."""
+    if not is_authorized(update):
+        return
+
+    name = " ".join(context.args).strip() if context.args else ""
+    if not name:
+        await update.message.reply_text("Usage: /delete <tên conversation>")
+        return
+
+    chat_id = update.effective_chat.id
+    saved = sessions.get(chat_id, _default_chat_data()).get("saved", {})
+
+    if name not in saved:
+        await update.message.reply_text(f"❌ Không tìm thấy: {name}")
+        return
+
+    # If deleting the active conversation, clear current
+    if saved[name] == _get_current_session(chat_id):
+        _set_current_session(chat_id, None)
+
+    del sessions[chat_id]["saved"][name]
+    _save_sessions()
+
+    await _safe_reply(update.message, f"🗑️ Đã xoá: <b>{html_escape(name)}</b>")
 
 
 async def cmd_clear(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -588,8 +744,7 @@ async def cmd_clear(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_ids[chat_id] = []
 
     # Reset claude session too
-    if chat_id in sessions:
-        del sessions[chat_id]
+    _set_current_session(chat_id, None)
 
     msg = await update.effective_chat.send_message("🧹 Đã xoá lịch sử. Session mới.")
     track_message(chat_id, msg.message_id)
@@ -642,10 +797,18 @@ async def cmd_ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Usage: /ask <câu hỏi về code>")
         return
 
-    streaming_msg = await update.message.reply_text("🤔 ...")
-    track_message(update.effective_chat.id, streaming_msg.message_id)
-    response = await run_claude_stream(prompt, streaming_msg, update.effective_chat.id, bot=update.get_bot())
-    await send_long_message(update, response, streaming_msg)
+    chat_id = update.effective_chat.id
+    lock = get_lock(chat_id)
+
+    if lock.locked():
+        await _safe_reply(update.message, "⏳ Đang xử lý tin nhắn trước, vui lòng đợi...")
+        return
+
+    async with lock:
+        streaming_msg = await update.message.reply_text("🤔 ...")
+        track_message(chat_id, streaming_msg.message_id)
+        response = await run_claude_stream(prompt, streaming_msg, chat_id, bot=update.get_bot())
+        await send_long_message(update, response, streaming_msg)
 
 
 # --- Message Handlers ---
@@ -656,11 +819,19 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
         return
 
-    prompt = update.message.text
-    streaming_msg = await update.message.reply_text("🤔 ...")
+    chat_id = update.effective_chat.id
+    lock = get_lock(chat_id)
 
-    response = await run_claude_stream(prompt, streaming_msg, update.effective_chat.id, bot=update.get_bot())
-    await send_long_message(update, response, streaming_msg)
+    if lock.locked():
+        await _safe_reply(update.message, "⏳ Đang xử lý tin nhắn trước, vui lòng đợi...")
+        return
+
+    async with lock:
+        prompt = update.message.text
+        streaming_msg = await update.message.reply_text("🤔 ...")
+
+        response = await run_claude_stream(prompt, streaming_msg, chat_id, bot=update.get_bot())
+        await send_long_message(update, response, streaming_msg)
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -668,24 +839,32 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
         return
 
-    streaming_msg = await update.message.reply_text("🖼️ ...")
-    track_message(update.effective_chat.id, streaming_msg.message_id)
+    chat_id = update.effective_chat.id
+    lock = get_lock(chat_id)
 
-    photo = update.message.photo[-1]  # highest resolution
-    file = await photo.get_file()
+    if lock.locked():
+        await _safe_reply(update.message, "⏳ Đang xử lý tin nhắn trước, vui lòng đợi...")
+        return
 
-    with tempfile.NamedTemporaryFile(
-        suffix=".jpg", delete=False
-    ) as tmp:
-        tmp_path = tmp.name
-        await file.download_to_drive(tmp_path)
+    async with lock:
+        streaming_msg = await update.message.reply_text("🖼️ ...")
+        track_message(chat_id, streaming_msg.message_id)
 
-    try:
-        caption = update.message.caption or "Phân tích ảnh này. Nếu là code hoặc error, giải thích và đề xuất fix."
-        response = await run_claude_stream(caption, streaming_msg, update.effective_chat.id, image_path=tmp_path, bot=update.get_bot())
-        await send_long_message(update, response, streaming_msg)
-    finally:
-        Path(tmp_path).unlink(missing_ok=True)
+        photo = update.message.photo[-1]  # highest resolution
+        file = await photo.get_file()
+
+        with tempfile.NamedTemporaryFile(
+            suffix=".jpg", delete=False
+        ) as tmp:
+            tmp_path = tmp.name
+            await file.download_to_drive(tmp_path)
+
+        try:
+            caption = update.message.caption or "Phân tích ảnh này. Nếu là code hoặc error, giải thích và đề xuất fix."
+            response = await run_claude_stream(caption, streaming_msg, chat_id, image_path=tmp_path, bot=update.get_bot())
+            await send_long_message(update, response, streaming_msg)
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
 
 
 async def handle_document(
@@ -712,31 +891,39 @@ async def handle_document(
         )
         return
 
-    streaming_msg = await update.message.reply_text("📎 ...")
-    track_message(update.effective_chat.id, streaming_msg.message_id)
+    chat_id = update.effective_chat.id
+    lock = get_lock(chat_id)
 
-    file = await doc.get_file()
-    suffix = Path(doc.file_name).suffix if doc.file_name else ".tmp"
+    if lock.locked():
+        await _safe_reply(update.message, "⏳ Đang xử lý tin nhắn trước, vui lòng đợi...")
+        return
 
-    with tempfile.NamedTemporaryFile(
-        suffix=suffix, delete=False
-    ) as tmp:
-        tmp_path = tmp.name
-        await file.download_to_drive(tmp_path)
+    async with lock:
+        streaming_msg = await update.message.reply_text("📎 ...")
+        track_message(chat_id, streaming_msg.message_id)
 
-    try:
-        caption = update.message.caption or "Phân tích file này."
+        file = await doc.get_file()
+        suffix = Path(doc.file_name).suffix if doc.file_name else ".tmp"
 
-        if is_image:
-            response = await run_claude_stream(caption, streaming_msg, update.effective_chat.id, image_path=tmp_path, bot=update.get_bot())
-        else:
-            content = Path(tmp_path).read_text(errors="replace")[:15000]
-            prompt = f"{caption}\n\nFile: {doc.file_name}\n```\n{content}\n```"
-            response = await run_claude_stream(prompt, streaming_msg, update.effective_chat.id, bot=update.get_bot())
+        with tempfile.NamedTemporaryFile(
+            suffix=suffix, delete=False
+        ) as tmp:
+            tmp_path = tmp.name
+            await file.download_to_drive(tmp_path)
 
-        await send_long_message(update, response, streaming_msg)
-    finally:
-        Path(tmp_path).unlink(missing_ok=True)
+        try:
+            caption = update.message.caption or "Phân tích file này."
+
+            if is_image:
+                response = await run_claude_stream(caption, streaming_msg, chat_id, image_path=tmp_path, bot=update.get_bot())
+            else:
+                content = Path(tmp_path).read_text(errors="replace")[:15000]
+                prompt = f"{caption}\n\nFile: {doc.file_name}\n```\n{content}\n```"
+                response = await run_claude_stream(prompt, streaming_msg, chat_id, bot=update.get_bot())
+
+            await send_long_message(update, response, streaming_msg)
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
 
 
 def main():
@@ -757,9 +944,13 @@ def main():
     async def post_init(application):
         await application.bot.set_my_commands([
             ("new", "Conversation mới"),
-            ("clear", "Xoá lịch sử + reset session"),
+            ("save", "Lưu conversation"),
+            ("list", "Danh sách conversations"),
+            ("switch", "Chuyển conversation"),
+            ("delete", "Xoá conversation"),
+            ("clear", "Xoá lịch sử + reset"),
             ("changes", "Xem code changes"),
-            ("review", "Claude review code changes"),
+            ("review", "Claude review changes"),
             ("status", "Git status"),
             ("log", "10 commits gần nhất"),
             ("branch", "Danh sách branches"),
@@ -773,6 +964,10 @@ def main():
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_start))
     app.add_handler(CommandHandler("new", cmd_new))
+    app.add_handler(CommandHandler("save", cmd_save))
+    app.add_handler(CommandHandler("list", cmd_list))
+    app.add_handler(CommandHandler("switch", cmd_switch))
+    app.add_handler(CommandHandler("delete", cmd_delete_conv))
     app.add_handler(CommandHandler("clear", cmd_clear))
     app.add_handler(CommandHandler("changes", cmd_changes))
     app.add_handler(CommandHandler("review", cmd_changes_detail))
