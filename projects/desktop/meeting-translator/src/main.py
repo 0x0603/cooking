@@ -28,7 +28,7 @@ class MeetingTranslator:
         self._current_en_text = ""
         self._last_interim_time = 0.0
         self._is_listening = False
-        self._is_translating = True
+        self._is_translating = False
         self._thread: threading.Thread | None = None
 
     def setup(self, overlay: OverlayWindow) -> None:

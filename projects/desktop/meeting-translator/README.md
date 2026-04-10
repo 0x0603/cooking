@@ -1,28 +1,27 @@
 # Meeting Translator
 
-Real-time English → Vietnamese translator for macOS meetings. Captures system audio from Zoom, Teams, Google Meet, etc. and displays Vietnamese subtitles as a floating overlay.
+Real-time English → Vietnamese translator for macOS meetings with a Vietnamese → English input panel. Captures system audio from Zoom, Teams, Google Meet, etc. and displays translated subtitles as a floating overlay.
 
-## How It Works
+## Features
 
-1. **BlackHole** captures system audio (meeting audio)
-2. **Deepgram Nova-2** transcribes English speech in real-time (streaming)
-3. **GPT-4o-mini** translates to Vietnamese with streaming response
-4. **PyQt6** overlay window shows subtitles on top of all windows
+- **Live EN → VI**: Captures meeting audio and translates to Vietnamese in real-time
+- **VI → EN Input**: Type Vietnamese, get English translation (for composing responses)
+- **Hidden from screen share**: Overlay is invisible in Zoom/Meet/Teams screen sharing
+- **No virtual audio device**: Uses macOS ScreenCaptureKit directly
+- **IT & Crypto terminology**: Keeps technical terms in English, boosted keyword recognition
+- **Utterance buffering**: Waits for complete sentences before translating
+- **Always-on-top**: Floating overlay stays visible across all apps
 
 ## Prerequisites
 
 - macOS 13+
-- Python 3.9+
-- BlackHole virtual audio device
+- Python 3.12+
 
 ## Setup
 
 ```bash
-# Install BlackHole for system audio capture
-brew install blackhole-2ch
-
 # Create virtual environment
-python3 -m venv venv
+python3.12 -m venv venv
 source venv/bin/activate
 
 # Install dependencies
@@ -33,16 +32,13 @@ cp .env.example .env
 # Edit .env with your API keys
 ```
 
-### Audio Routing (BlackHole)
+### Permissions
 
-To capture meeting audio, set up a **Multi-Output Device** in macOS:
+First run will require **Screen & System Audio Recording** permission:
 
-1. Open **Audio MIDI Setup** (search in Spotlight)
-2. Click **+** → **Create Multi-Output Device**
-3. Check both **BlackHole 2ch** and your **speakers/headphones**
-4. Set this Multi-Output Device as your **system output** in System Settings → Sound
-
-This routes audio to both your ears and the translator.
+1. Go to **System Settings → Privacy & Security → Screen & System Audio Recording**
+2. Enable your terminal app (Terminal, iTerm, Antigravity, VS Code, etc.)
+3. Restart terminal
 
 ## Usage
 
@@ -51,22 +47,44 @@ source venv/bin/activate
 python src/main.py
 ```
 
-- The overlay window stays on top of all windows
-- Drag to reposition
-- Click **x** to close
-- Press **Ctrl+C** in terminal to stop
+### Controls
+
+| Button                   | Action                                      |
+| ------------------------ | ------------------------------------------- |
+| **Start/Stop Listening** | Toggle audio capture + transcription        |
+| **Translate: ON/OFF**    | Toggle Vietnamese translation (default OFF) |
+| **Flush**                | Force translate current buffered text       |
+| **Clear**                | Clear all translation history               |
+| **Enter** (in input box) | Translate Vietnamese → English              |
+
+### UI Layout
+
+```
+┌──────────────────────────────────────────────┐
+│ ● Meeting Translator  Listening...         x │
+├──────────────────────┬───────────────────────┤
+│  EN → VI (Live)      │  VI → EN (Type)       │
+│                      │                       │
+│  English text...     │  Vietnamese input...  │
+│  Vietnamese text...  │  English output...    │
+│                      ├───────────────────────┤
+│                      │ [Input box]    [Dich] │
+├──────────────────────┴───────────────────────┤
+│ [Listen] [Translate] [Flush]         [Clear] │
+└──────────────────────────────────────────────┘
+```
 
 ## Cost Estimate
 
-| Service                   | Cost            |
-| ------------------------- | --------------- |
-| Deepgram (1 hour meeting) | ~$0.26          |
-| GPT-4o-mini translation   | ~$0.01-0.02     |
-| **Total per hour**        | **~$0.05-0.10** |
+| Service                               | Cost per hour   |
+| ------------------------------------- | --------------- |
+| Deepgram (continuous speech)          | ~$0.26          |
+| GPT-4o-mini translation               | ~$0.01-0.02     |
+| **Realistic meeting (40-50% speech)** | **~$0.10-0.15** |
 
 ## Environment Variables
 
 | Variable           | Description                                                                |
 | ------------------ | -------------------------------------------------------------------------- |
 | `DEEPGRAM_API_KEY` | Deepgram API key ([deepgram.com](https://deepgram.com) — $200 free credit) |
-| `OPENAI_API_KEY`   | OpenAI API key                                                             |
+| `OPENAI_API_KEY`   | OpenAI API key ([platform.openai.com](https://platform.openai.com))        |

@@ -209,7 +209,7 @@ class OverlayWindow(QMainWindow):
         super().__init__()
         self._drag_position: QPoint | None = None
         self._is_listening = False
-        self._is_translating = True
+        self._is_translating = False
         self._entries: list[SubtitleEntry] = []
         self._chat_entries: list[ChatEntry] = []
         self._current_interim: SubtitleEntry | None = None
@@ -466,10 +466,10 @@ class OverlayWindow(QMainWindow):
         self._listen_btn.setStyleSheet(_btn_style(ACCENT, ACCENT_HOVER))
         self._listen_btn.clicked.connect(self._on_toggle_listen)
 
-        self._translate_btn = QPushButton("Translate: ON")
+        self._translate_btn = QPushButton("Translate: OFF")
         self._translate_btn.setFixedHeight(30)
         self._translate_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self._translate_btn.setStyleSheet(_btn_style(GREEN, "#3ae080", fg="black"))
+        self._translate_btn.setStyleSheet(_btn_style(TEXT_SECONDARY, BORDER, fg="white"))
         self._translate_btn.clicked.connect(self._on_toggle_translate)
 
         flush_btn = QPushButton("Flush")

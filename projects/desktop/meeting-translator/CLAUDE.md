@@ -2,31 +2,33 @@
 
 ## Overview
 
-A macOS desktop app that captures English audio from meetings (Zoom, Teams, Google Meet, etc.) and provides real-time Vietnamese translation as floating subtitles.
+A macOS desktop app that captures English audio from meetings (Zoom, Teams, Google Meet, etc.) and provides real-time Vietnamese translation as a floating overlay. Also supports typing Vietnamese to translate to English.
 
 ## Architecture
 
 ```
-Audio Capture (sounddevice + BlackHole)
+ScreenCaptureKit (system audio capture, no virtual device needed)
        │
        ▼
 Deepgram Streaming STT (English transcript)
        │
-       ├── Interim results → Quick translate → Show immediately
-       │
-       └── Final results → Full translate → Replace interim
-       │
-       ▼
-GPT-4o-mini Translation (English → Vietnamese)
+       ├── Interim results → Show English immediately (debounced 500ms)
+       ├── Final results → Buffer until utterance end
+       └── UtteranceEnd / timeout (2s) → Flush buffer → Translate
        │
        ▼
-PyQt6 Overlay Window (floating subtitle)
+GPT-4o-mini Translation
+       ├── EN → VI (streaming, live panel)
+       └── VI → EN (input panel)
+       │
+       ▼
+PyQt6 Overlay Window (floating, always-on-top, hidden from screen recording)
 ```
 
 ## Tech Stack
 
-- **Language**: Python 3.9+
-- **Audio Capture**: `sounddevice` (via BlackHole virtual audio device)
+- **Language**: Python 3.12+
+- **Audio Capture**: ScreenCaptureKit (macOS native, via pyobjc)
 - **Speech-to-Text**: Deepgram Nova-2 (streaming WebSocket)
 - **Translation**: OpenAI GPT-4o-mini (streaming)
 - **UI**: PyQt6 (floating overlay window)
@@ -41,67 +43,75 @@ PyQt6 Overlay Window (floating subtitle)
 ```
 meeting-translator/
 ├── src/
-│   ├── main.py              # App entry point
-│   ├── audio_capture.py     # System audio capture via sounddevice
-│   ├── transcriber.py       # Deepgram streaming STT
-│   ├── translator.py        # GPT-4o-mini translation + cache
-│   ├── overlay.py           # PyQt6 floating overlay window
+│   ├── main.py              # App entry point + controller
+│   ├── audio_capture.py     # ScreenCaptureKit system audio capture
+│   ├── transcriber.py       # Deepgram streaming STT with utterance buffering
+│   ├── translator.py        # GPT-4o-mini EN↔VI translation
+│   ├── overlay.py           # PyQt6 split-panel overlay window
 │   └── config.py            # Configuration and constants
 ├── .env                     # API keys (not committed)
 ├── .env.example             # API keys template
 ├── requirements.txt         # Python dependencies
+├── setup.py                 # py2app build config
 ├── CLAUDE.md                # This file
 └── README.md                # Project documentation
 ```
 
 ## Key Design Decisions
 
-### Two-pass Translation
+### Two-panel UI
 
-1. **Interim pass**: Translate chunks quickly for immediate display
-2. **Final pass**: Re-translate complete sentence for accuracy, replaces interim
+- **Left panel**: Live EN → VI translation (from meeting audio)
+- **Right panel**: VI → EN input (type Vietnamese, get English)
+- Splitter for resizable panels, 50/50 default
 
-### Translation Cache
+### Utterance Buffering
 
-- Cache frequently used phrases ("Any questions?", "Makes sense", etc.)
-- Cache hit = 0ms delay
+- Deepgram `is_final` results are buffered, not translated immediately
+- Buffer flushes on `UtteranceEnd` event (3s silence) or auto-timeout (2s)
+- Prevents sentence fragments from being translated separately
+
+### Hidden from Screen Recording
+
+- `NSWindow.setSharingType_(0)` hides overlay from screen share/recording
+- Safe to use during interviews and meetings
+
+### Audio Capture
+
+- Uses **ScreenCaptureKit** (macOS 13+) — no BlackHole or virtual audio device needed
+- Captures all system audio, excludes own process audio
+- Requires Screen Recording permission for the terminal app
 
 ### Deepgram Config
 
 - Model: `nova-2`
-- `endpointing`: 500-800ms (natural pause detection for meetings)
-- `smart_format`: true (punctuation, numbers)
-- `keywords`: Boosted domain-specific terms
-- `interim_results`: true
-
-### Audio Capture
-
-- Requires **BlackHole** virtual audio device installed on macOS
-- Captures system audio output (not microphone)
-- Sample rate: 16000 Hz, mono, 16-bit PCM
+- `endpointing`: 2500ms
+- `utterance_end_ms`: 3000ms
+- `smart_format`: true
+- `keywords`: IT + crypto domain terms boosted
+- `diarize`: available but off by default
 
 ## Code Conventions
 
-- Follow PEP 8
+- Python 3.12+, `from __future__ import annotations` in all files
 - Type hints for all functions
 - Async/await for API calls
 - 4 spaces indentation
 - Max line length: 100 characters
-- Docstrings for public functions
 
 ## Commands
 
 ```bash
 # Setup
-python3 -m venv venv
+python3.12 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
 # Run
 python src/main.py
 
-# Install BlackHole (required for audio capture)
-brew install blackhole-2ch
+# Build .app (optional)
+python setup.py py2app
 ```
 
 ## Environment Variables
@@ -110,3 +120,5 @@ brew install blackhole-2ch
 DEEPGRAM_API_KEY=your_key_here
 OPENAI_API_KEY=your_key_here
 ```
+
+`.env` is searched in: project dir, `~/.meeting-translator.env`
