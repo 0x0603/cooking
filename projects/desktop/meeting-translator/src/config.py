@@ -1,9 +1,23 @@
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Search .env in multiple locations (app bundle, project dir, home dir)
+_env_paths = [
+    Path(getattr(sys, "_MEIPASS", "")) / ".env",
+    Path(__file__).parent.parent / ".env",
+    Path(__file__).parent / ".env",
+    Path.home() / ".meeting-translator.env",
+]
+for p in _env_paths:
+    if p.exists():
+        load_dotenv(p)
+        break
+else:
+    load_dotenv()
 
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
