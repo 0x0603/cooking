@@ -5,6 +5,7 @@ from config import (
     OPENAI_MODEL,
     TRANSLATION_SYSTEM_PROMPT,
     TRANSLATION_CACHE,
+    VI_TO_EN_SYSTEM_PROMPT,
 )
 
 
@@ -68,3 +69,21 @@ class Translator:
 
         self.cache[normalized] = full_text
         return full_text
+
+    async def translate_vi_to_en(self, text: str) -> str:
+        """Translate Vietnamese text to English."""
+        normalized = text.strip()
+        if not normalized:
+            return ""
+
+        response = await self.client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": VI_TO_EN_SYSTEM_PROMPT},
+                {"role": "user", "content": normalized},
+            ],
+            temperature=0.3,
+            max_tokens=500,
+        )
+
+        return response.choices[0].message.content.strip()

@@ -35,15 +35,47 @@ DEEPGRAM_DIARIZE = False  # Distinguish different speakers
 
 # Debounce settings
 INTERIM_DEBOUNCE_MS = 500  # Only update interim display every 500ms
-DEEPGRAM_KEYWORDS = []  # Add domain-specific terms: ["Kubernetes:2", "CICD:2"]
+DEEPGRAM_KEYWORDS = [
+    "Kubernetes:2", "Docker:2", "CI/CD:2", "API:2", "microservice:2",
+    "pipeline:2", "deploy:2", "rollback:2", "endpoint:2", "serverless:2",
+    "terraform:2", "helm:2", "Jira:2", "Confluence:2", "AWS:2", "GCP:2",
+    "blockchain:2", "smart contract:2", "DeFi:2", "DEX:2", "CEX:2",
+    "NFT:2", "tokenomics:2", "staking:2", "liquidity:2", "TVL:2",
+    "airdrop:2", "on-chain:2", "off-chain:2", "mainnet:2", "testnet:2",
+    "Solidity:2", "EVM:2", "Web3:2", "dApp:2", "Ethereum:2", "Solana:2",
+    "Polygon:2", "Arbitrum:2", "Optimism:2", "oracle:2", "DAO:2",
+    "solver:2", "intent:2", "order flow:2", "MEV:2", "frontrunning:2",
+    "backrunning:2", "sandwich:2", "mempool:2", "searcher:2",
+    "CoW Protocol:2", "UniswapX:2", "1inch Fusion:2", "batch auction:2",
+]
 
 # Translation settings
 OPENAI_MODEL = "gpt-4o-mini"
 TRANSLATION_SYSTEM_PROMPT = (
-    "You are a real-time meeting translator. "
+    "You are a real-time meeting translator for IT/software engineering meetings. "
     "Translate English to Vietnamese. "
-    "Keep technical terms (deploy, API, database, etc.) in English. "
+    "Keep ALL technical terms in English: deploy, API, database, microservice, "
+    "Kubernetes, Docker, CI/CD, pipeline, sprint, standup, pull request, merge, "
+    "branch, commit, release, rollback, endpoint, payload, latency, throughput, "
+    "cache, load balancer, frontend, backend, fullstack, framework, library, SDK, "
+    "repository, cloud, serverless, container, cluster, node, pod, scaling, "
+    "monitoring, logging, debugging, refactor, code review, tech debt, blocker, "
+    "ticket, Jira, Confluence, Slack, AWS, GCP, Azure, terraform, helm, "
+    "blockchain, smart contract, DeFi, DEX, CEX, NFT, token, tokenomics, "
+    "wallet, gas fee, staking, yield, liquidity, TVL, APY, APR, airdrop, "
+    "bridge, layer 1, layer 2, rollup, validator, consensus, PoS, PoW, "
+    "on-chain, off-chain, mainnet, testnet, whitepaper, DAO, governance, "
+    "mint, burn, swap, pool, vault, oracle, Solidity, EVM, Web3, dApp, "
+    "Ethereum, Bitcoin, Solana, Polygon, Arbitrum, Optimism, Base. "
     "Be concise and natural. Only return the translation, nothing else."
+)
+
+VI_TO_EN_SYSTEM_PROMPT = (
+    "You are a real-time meeting translator for IT/software engineering meetings. "
+    "Translate Vietnamese to English. "
+    "Keep technical terms in English. "
+    "Use professional, natural English suitable for tech meetings. "
+    "Only return the translation, nothing else."
 )
 
 # Cache for common phrases
@@ -63,7 +95,7 @@ TRANSLATION_CACHE: dict[str, str] = {
 # UI settings
 OVERLAY_MIN_WIDTH = 500
 OVERLAY_MIN_HEIGHT = 250
-OVERLAY_DEFAULT_WIDTH = 400
+OVERLAY_DEFAULT_WIDTH = 1000
 OVERLAY_DEFAULT_HEIGHT = 1000
 OVERLAY_OPACITY = 0.92
 OVERLAY_FONT_SIZE_EN = 13

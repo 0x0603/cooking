@@ -46,6 +46,7 @@ class MeetingTranslator:
         overlay.toggle_listen_signal.connect(self._toggle_listen)
         overlay.toggle_translate_signal.connect(self._toggle_translate)
         overlay.flush_signal.connect(self._flush)
+        overlay.vi_to_en_signal.connect(self._on_vi_to_en)
 
     def _on_audio_data(self, audio_data) -> None:
         if self.loop and self.loop.is_running():
@@ -104,6 +105,29 @@ class MeetingTranslator:
     def _flush(self) -> None:
         """Force flush the transcriber buffer — translate immediately."""
         self.transcriber._flush_buffer()
+
+    def _on_vi_to_en(self, vi_text: str) -> None:
+        """Handle Vietnamese to English translation from input panel."""
+        if self.loop and self.loop.is_running():
+            asyncio.run_coroutine_threadsafe(
+                self._translate_vi_to_en(vi_text),
+                self.loop,
+            )
+        else:
+            # If not listening, create a temporary loop
+            import threading
+            loop = asyncio.new_event_loop()
+
+            def run():
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(self._translate_vi_to_en(vi_text))
+
+            threading.Thread(target=run, daemon=True).start()
+
+    async def _translate_vi_to_en(self, vi_text: str) -> None:
+        en_text = await self.translator.translate_vi_to_en(vi_text)
+        if self.overlay:
+            self.overlay.vi_to_en_result_signal.emit(vi_text, en_text)
 
     def start_listening(self) -> None:
         self._is_listening = True

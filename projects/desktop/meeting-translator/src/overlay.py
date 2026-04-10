@@ -9,10 +9,11 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QPushButton,
     QSizeGrip,
-    QApplication,
+    QTextEdit,
+    QSplitter,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize, QTimer
-from PyQt6.QtGui import QFont, QCursor
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QTimer, QEvent
+from PyQt6.QtGui import QCursor
 
 from config import (
     OVERLAY_MIN_WIDTH,
@@ -29,10 +30,12 @@ from config import (
 BG_PRIMARY = "#0f0f1a"
 BG_SURFACE = "#1a1a2e"
 BG_HOVER = "#252540"
+BG_INPUT = "#12122a"
 TEXT_PRIMARY = "#f0f0f0"
 TEXT_SECONDARY = "#8888aa"
 TEXT_EN = "#c8c8d8"
 TEXT_VI = "#64d2ff"
+TEXT_VI_INPUT = "#a8e6cf"
 ACCENT = "#6c5ce7"
 ACCENT_HOVER = "#7c6cf7"
 RED = "#ff4757"
@@ -89,7 +92,7 @@ class SubtitleEntry(QWidget):
         self.en_label.setStyleSheet(f"""
             color: {TEXT_EN};
             font-size: {OVERLAY_FONT_SIZE_EN}px;
-            font-family: 'SF Pro Text', 'Helvetica Neue', -apple-system, sans-serif;
+            font-family: -apple-system, 'Helvetica Neue', sans-serif;
             padding: 0;
             background: transparent;
         """)
@@ -101,7 +104,7 @@ class SubtitleEntry(QWidget):
             color: {TEXT_VI};
             font-size: {OVERLAY_FONT_SIZE_VI}px;
             font-weight: 600;
-            font-family: 'SF Pro Text', 'Helvetica Neue', -apple-system, sans-serif;
+            font-family: -apple-system, 'Helvetica Neue', sans-serif;
             padding: 0;
             background: transparent;
         """)
@@ -126,6 +129,50 @@ class SubtitleEntry(QWidget):
             self.vi_label.hide()
 
 
+class ChatEntry(QWidget):
+    """A single chat entry with Vietnamese input and English translation."""
+
+    def __init__(self, vi: str, en: str, parent=None):
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 6, 14, 6)
+        layout.setSpacing(3)
+
+        vi_label = QLabel(vi)
+        vi_label.setWordWrap(True)
+        vi_label.setTextFormat(Qt.TextFormat.PlainText)
+        vi_label.setStyleSheet(f"""
+            color: {TEXT_VI_INPUT};
+            font-size: {OVERLAY_FONT_SIZE_VI}px;
+            font-weight: 600;
+            font-family: -apple-system, 'Helvetica Neue', sans-serif;
+            padding: 0;
+            background: transparent;
+        """)
+
+        en_label = QLabel(en)
+        en_label.setWordWrap(True)
+        en_label.setTextFormat(Qt.TextFormat.PlainText)
+        en_label.setStyleSheet(f"""
+            color: {TEXT_EN};
+            font-size: {OVERLAY_FONT_SIZE_EN}px;
+            font-family: -apple-system, 'Helvetica Neue', sans-serif;
+            padding: 0;
+            background: transparent;
+        """)
+        en_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+
+        layout.addWidget(vi_label)
+        layout.addWidget(en_label)
+
+        self.setStyleSheet(f"""
+            ChatEntry {{
+                background-color: {BG_SURFACE};
+                border-radius: 8px;
+            }}
+        """)
+
+
 def _btn_style(bg: str, bg_hover: str, fg: str = "white", radius: int = 8) -> str:
     return f"""
         QPushButton {{
@@ -135,20 +182,17 @@ def _btn_style(bg: str, bg_hover: str, fg: str = "white", radius: int = 8) -> st
             border-radius: {radius}px;
             font-size: 12px;
             font-weight: 600;
-            font-family: 'SF Pro Text', -apple-system, sans-serif;
+            font-family: -apple-system, sans-serif;
             padding: 5px 14px;
         }}
         QPushButton:hover {{
             background-color: {bg_hover};
         }}
-        QPushButton:pressed {{
-            opacity: 0.8;
-        }}
     """
 
 
 class OverlayWindow(QMainWindow):
-    """Floating overlay window for displaying translated subtitles."""
+    """Floating overlay window with live translation and input panel."""
 
     update_interim_signal = pyqtSignal(str)
     update_final_signal = pyqtSignal(str, str)
@@ -158,6 +202,8 @@ class OverlayWindow(QMainWindow):
     toggle_listen_signal = pyqtSignal()
     toggle_translate_signal = pyqtSignal()
     flush_signal = pyqtSignal()
+    vi_to_en_signal = pyqtSignal(str)  # Vietnamese text to translate to English
+    vi_to_en_result_signal = pyqtSignal(str, str)  # (vi, en) result
 
     def __init__(self):
         super().__init__()
@@ -165,6 +211,7 @@ class OverlayWindow(QMainWindow):
         self._is_listening = False
         self._is_translating = True
         self._entries: list[SubtitleEntry] = []
+        self._chat_entries: list[ChatEntry] = []
         self._current_interim: SubtitleEntry | None = None
 
         self._setup_window()
@@ -216,7 +263,6 @@ class OverlayWindow(QMainWindow):
         title_layout.setContentsMargins(14, 0, 10, 0)
         title_layout.setSpacing(8)
 
-        # Status dot + label
         self._status_dot = QLabel()
         self._status_dot.setFixedSize(8, 8)
         self._update_status_dot(False)
@@ -226,7 +272,7 @@ class OverlayWindow(QMainWindow):
             color: {TEXT_PRIMARY};
             font-size: 13px;
             font-weight: 600;
-            font-family: 'SF Pro Text', -apple-system, sans-serif;
+            font-family: -apple-system, sans-serif;
             background: transparent;
             border: none;
         """)
@@ -235,17 +281,11 @@ class OverlayWindow(QMainWindow):
         self.status_label.setStyleSheet(f"""
             color: {TEXT_SECONDARY};
             font-size: 11px;
-            font-family: 'SF Pro Text', -apple-system, sans-serif;
+            font-family: -apple-system, sans-serif;
             background: transparent;
             border: none;
         """)
 
-        title_layout.addWidget(self._status_dot)
-        title_layout.addWidget(title_label)
-        title_layout.addWidget(self.status_label)
-        title_layout.addStretch()
-
-        # Close button
         close_btn = QPushButton("x")
         close_btn.setFixedSize(26, 26)
         close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -265,10 +305,44 @@ class OverlayWindow(QMainWindow):
         """)
         close_btn.clicked.connect(self.close)
 
+        title_layout.addWidget(self._status_dot)
+        title_layout.addWidget(title_label)
+        title_layout.addWidget(self.status_label)
+        title_layout.addStretch()
         title_layout.addWidget(close_btn)
         main_layout.addWidget(title_bar)
 
-        # === Subtitle area ===
+        # === Split area: Left (live translation) | Right (input VI → EN) ===
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.setStyleSheet(f"""
+            QSplitter {{
+                background: transparent;
+            }}
+            QSplitter::handle {{
+                background-color: {BORDER};
+                width: 1px;
+            }}
+        """)
+
+        # --- Left panel: Live translation EN → VI ---
+        left_panel = QWidget()
+        left_panel.setStyleSheet("background: transparent;")
+        left_layout = QVBoxLayout(left_panel)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(0)
+
+        left_header = QLabel("  EN → VI  (Live)")
+        left_header.setFixedHeight(28)
+        left_header.setStyleSheet(f"""
+            color: {TEXT_SECONDARY};
+            font-size: 11px;
+            font-weight: 600;
+            background-color: {BG_PRIMARY};
+            border-bottom: 1px solid {BORDER};
+            padding-left: 8px;
+        """)
+        left_layout.addWidget(left_header)
+
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -276,13 +350,100 @@ class OverlayWindow(QMainWindow):
         self.scroll_content = QWidget()
         self.scroll_content.setStyleSheet("background: transparent;")
         self.scroll_layout = QVBoxLayout(self.scroll_content)
-        self.scroll_layout.setContentsMargins(8, 8, 8, 8)
+        self.scroll_layout.setContentsMargins(6, 6, 6, 6)
         self.scroll_layout.setSpacing(6)
         self.scroll_layout.addStretch()
 
         scroll.setWidget(self.scroll_content)
         self.scroll_area = scroll
-        main_layout.addWidget(scroll, 1)
+        left_layout.addWidget(scroll, 1)
+
+        splitter.addWidget(left_panel)
+
+        # --- Right panel: Input VI → EN ---
+        right_panel = QWidget()
+        right_panel.setStyleSheet("background: transparent;")
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(0)
+
+        right_header = QLabel("  VI → EN  (Type)")
+        right_header.setFixedHeight(28)
+        right_header.setStyleSheet(f"""
+            color: {TEXT_SECONDARY};
+            font-size: 11px;
+            font-weight: 600;
+            background-color: {BG_PRIMARY};
+            border-bottom: 1px solid {BORDER};
+            padding-left: 8px;
+        """)
+        right_layout.addWidget(right_header)
+
+        # Chat history
+        chat_scroll = QScrollArea()
+        chat_scroll.setWidgetResizable(True)
+        chat_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        self.chat_scroll_content = QWidget()
+        self.chat_scroll_content.setStyleSheet("background: transparent;")
+        self.chat_scroll_layout = QVBoxLayout(self.chat_scroll_content)
+        self.chat_scroll_layout.setContentsMargins(6, 6, 6, 6)
+        self.chat_scroll_layout.setSpacing(6)
+        self.chat_scroll_layout.addStretch()
+
+        chat_scroll.setWidget(self.chat_scroll_content)
+        self.chat_scroll_area = chat_scroll
+        right_layout.addWidget(chat_scroll, 1)
+
+        # Input area
+        input_container = QWidget()
+        input_container.setStyleSheet(f"""
+            QWidget {{
+                background-color: {BG_SURFACE};
+                border-top: 1px solid {BORDER};
+            }}
+        """)
+        input_layout = QHBoxLayout(input_container)
+        input_layout.setContentsMargins(8, 6, 8, 6)
+        input_layout.setSpacing(6)
+
+        self._input_box = QTextEdit()
+        self._input_box.setPlaceholderText("Nhap tieng Viet, Enter de dich...")
+        self._input_box.setFixedHeight(70)
+        self._input_box.setStyleSheet(f"""
+            QTextEdit {{
+                background-color: {BG_INPUT};
+                color: {TEXT_PRIMARY};
+                border: 1px solid {BORDER};
+                border-radius: 8px;
+                padding: 6px 10px;
+                font-size: 13px;
+                font-family: -apple-system, sans-serif;
+            }}
+            QTextEdit:focus {{
+                border: 1px solid {ACCENT};
+            }}
+        """)
+        self._input_box.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._input_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        send_btn = QPushButton("Dich")
+        send_btn.setFixedSize(70, 70)
+        send_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        send_btn.setStyleSheet(_btn_style(ACCENT, ACCENT_HOVER))
+        send_btn.clicked.connect(self._on_send_input)
+
+        self._input_box.installEventFilter(self)
+
+        input_layout.addWidget(self._input_box, 1)
+        input_layout.addWidget(send_btn)
+        right_layout.addWidget(input_container)
+
+        splitter.addWidget(right_panel)
+
+        # Set initial split ratio 60/40
+        splitter.setSizes([500, 500])
+        main_layout.addWidget(splitter, 1)
 
         # === Bottom toolbar ===
         toolbar = QWidget()
@@ -299,33 +460,29 @@ class OverlayWindow(QMainWindow):
         toolbar_layout.setContentsMargins(12, 0, 12, 0)
         toolbar_layout.setSpacing(8)
 
-        # Listen button
         self._listen_btn = QPushButton("Start Listening")
         self._listen_btn.setFixedHeight(30)
         self._listen_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self._listen_btn.setStyleSheet(_btn_style(ACCENT, ACCENT_HOVER))
         self._listen_btn.clicked.connect(self._on_toggle_listen)
 
-        # Translate toggle button
         self._translate_btn = QPushButton("Translate: ON")
         self._translate_btn.setFixedHeight(30)
         self._translate_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self._translate_btn.setStyleSheet(_btn_style(GREEN, "#3ae080", fg="black"))
         self._translate_btn.clicked.connect(self._on_toggle_translate)
 
-        # Flush button — force translate current buffer
         flush_btn = QPushButton("Flush")
         flush_btn.setFixedHeight(30)
         flush_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         flush_btn.setStyleSheet(_btn_style(YELLOW, "#ffb732", fg="black"))
         flush_btn.clicked.connect(lambda: self.flush_signal.emit())
 
-        # Clear button
         clear_btn = QPushButton("Clear")
         clear_btn.setFixedHeight(30)
         clear_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         clear_btn.setStyleSheet(_btn_style(BG_HOVER, BORDER, fg=TEXT_SECONDARY))
-        clear_btn.clicked.connect(self._clear_entries)
+        clear_btn.clicked.connect(self._clear_all)
 
         toolbar_layout.addWidget(self._listen_btn)
         toolbar_layout.addWidget(self._translate_btn)
@@ -333,7 +490,6 @@ class OverlayWindow(QMainWindow):
         toolbar_layout.addStretch()
         toolbar_layout.addWidget(clear_btn)
 
-        # Resize grip
         grip = QSizeGrip(self)
         grip.setFixedSize(14, 14)
         grip.setStyleSheet("background: transparent;")
@@ -345,7 +501,34 @@ class OverlayWindow(QMainWindow):
         self.update_interim_signal.connect(self._on_interim)
         self.update_final_signal.connect(self._on_final)
         self.update_translation_signal.connect(self._on_translation_update)
+        self.vi_to_en_result_signal.connect(self._on_vi_to_en_result)
 
+    # --- Input panel ---
+    def _on_send_input(self) -> None:
+        text = self._input_box.toPlainText().strip()
+        if not text:
+            return
+        self._input_box.clear()
+        self.vi_to_en_signal.emit(text)
+
+    def _on_vi_to_en_result(self, vi_text: str, en_text: str) -> None:
+        entry = ChatEntry(vi_text, en_text)
+        insert_pos = self.chat_scroll_layout.count() - 1
+        self.chat_scroll_layout.insertWidget(insert_pos, entry)
+        self._chat_entries.append(entry)
+        QTimer.singleShot(10, lambda: self.chat_scroll_area.verticalScrollBar().setValue(
+            self.chat_scroll_area.verticalScrollBar().maximum()
+        ))
+
+    def eventFilter(self, obj, event) -> bool:
+        if obj is self._input_box and event.type() == QEvent.Type.KeyPress:
+            if (event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)
+                    and not event.modifiers() & Qt.KeyboardModifier.ShiftModifier):
+                self._on_send_input()
+                return True
+        return super().eventFilter(obj, event)
+
+    # --- Live translation panel ---
     def _update_status_dot(self, active: bool) -> None:
         color = RED if active else TEXT_SECONDARY
         self._status_dot.setStyleSheet(f"""
@@ -387,7 +570,6 @@ class OverlayWindow(QMainWindow):
             self._current_interim = SubtitleEntry()
             insert_pos = self.scroll_layout.count() - 1
             self.scroll_layout.insertWidget(insert_pos, self._current_interim)
-
         self._current_interim.set_text(text, "")
         self._scroll_to_bottom()
 
@@ -402,7 +584,6 @@ class OverlayWindow(QMainWindow):
             insert_pos = self.scroll_layout.count() - 1
             self.scroll_layout.insertWidget(insert_pos, entry)
             self._entries.append(entry)
-
         self._scroll_to_bottom()
         self._trim_old_entries()
 
@@ -422,11 +603,15 @@ class OverlayWindow(QMainWindow):
             self.scroll_layout.removeWidget(old)
             old.deleteLater()
 
-    def _clear_entries(self) -> None:
+    def _clear_all(self) -> None:
         for entry in self._entries:
             self.scroll_layout.removeWidget(entry)
             entry.deleteLater()
         self._entries.clear()
+        for entry in self._chat_entries:
+            self.chat_scroll_layout.removeWidget(entry)
+            entry.deleteLater()
+        self._chat_entries.clear()
         if self._current_interim:
             self.scroll_layout.removeWidget(self._current_interim)
             self._current_interim.deleteLater()
@@ -438,10 +623,13 @@ class OverlayWindow(QMainWindow):
             self._drag_position = (
                 event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             )
+        super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event) -> None:
         if self._drag_position and event.buttons() == Qt.MouseButton.LeftButton:
             self.move(event.globalPosition().toPoint() - self._drag_position)
+        super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event) -> None:
         self._drag_position = None
+        super().mouseReleaseEvent(event)
