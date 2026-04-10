@@ -1,0 +1,9 @@
+deepgram-sdk>=3.0.0,<4.0.0
+openai>=1.0.0
+PyQt6>=6.6.0
+numpy>=1.24.0
+python-dotenv>=1.0.0
+pyobjc-framework-ScreenCaptureKit>=10.0
+pyobjc-framework-AVFoundation>=10.0
+pyobjc-framework-CoreMedia>=10.0
+pyobjc-framework-CoreAudio>=10.0
